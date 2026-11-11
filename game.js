@@ -1,6 +1,7 @@
 const {
-  slots, finalStage, ammoLimit, bossShotLimit, bossHealth, initialCylinder, countAmmo, canBuy, loadAmmo,
-  chamberIndex, shoot, price, encounters, ammoChests, supplyWheel, finalWheel, weightedIndex,
+  slots, finalStage, bossShotLimit, bossHealth, initialCylinder, countAmmo, canBuy, loadAmmo,
+  chamberIndex, shoot, price, encounters, chestTiers, coinMultipliers, maxBaseMultiplier,
+  supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex,
 } = revolverRules;
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
@@ -14,14 +15,19 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wait = ms => pause(reducedMotion.matches ? Math.min(ms, 140) : ms);
 const bets = [10_000, 20_000, 50_000, 100_000];
 const startingBalance = 1_000_000;
-const readyHint = '保留彈藥，打倒第五關首領';
+const readyHint = '補彈或累積倍率，挑戰第六關首領';
 const chestArt = type => `assets/chest-${type}.png`;
+const multiplierText = multiplier => `${multiplier.toLocaleString('zh-TW', { maximumFractionDigits: 5 })}×`;
+const ammoText = ammo => ammo ? `${ammo} 發` : '空箱';
+const vaultNames = { coin: '金幣庫', ammo: '軍械庫' };
 
 let mode = 'ready';
 let balance = startingBalance;
 let betIndex = 0;
 let stage = 1;
 let targets = [];
+let selectedVault = null;
+let multiplier = 1;
 let shotsLeft = bossShotLimit;
 let hitsLeft = bossHealth;
 let spentOnAmmo = 0;
@@ -36,7 +42,7 @@ const stageCells = Array.from({ length: finalStage }, (_, i) => {
     name.textContent = '首領';
     const jackpot = document.createElement('small');
     jackpot.className = 'ladder-jackpot';
-    jackpot.textContent = 'WIN UP TO 10×';
+    jackpot.textContent = `WIN UP TO ${multiplierText(maxBaseMultiplier)}`;
     cell.append(name, jackpot);
   } else {
     cell.textContent = `第 ${i + 1} 關`;
@@ -62,23 +68,26 @@ function render() {
   const busy = spinning || looting || transitioning;
   const playing = !ready && !finished;
   const atBoss = stage === finalStage;
-  const choosing = playing && !atBoss;
+  const selecting = mode === 'vault';
+  const inVault = playing && !atBoss && Boolean(selectedVault);
+  const target = inVault ? targets[stage - 1][selectedVault] : null;
   const needsReset = ready && balance < bets[0];
   const cost = price(bet);
   ui.game.dataset.mode = mode;
-  ui.arena.dataset.target = playing ? (atBoss ? 'boss' : targets[stage - 1]) : '';
+  ui.arena.dataset.target = playing && atBoss ? 'boss' : target ?? '';
   ui.enemy.hidden = atBoss;
   ui['boss-enemy'].hidden = !atBoss;
   ui.intro.hidden = !ready;
-  ui.decisions.hidden = !choosing;
+  ui.vaults.hidden = !selecting;
+  ui.decisions.hidden = !inVault || transitioning;
   ui.settlement.hidden = !finished;
   ui.loot.hidden = !looting;
   ui['stage-transition'].hidden = !transitioning;
-  ui.primary.hidden = choosing;
+  ui.primary.hidden = playing && !atBoss;
   ui.primary.disabled = busy || needsReset;
   ui.skip.disabled = busy;
   ui.fire.disabled = busy || ammo === 0;
-  ui.buy.hidden = mode !== 'boss' || shotsLeft !== bossShotLimit || Boolean(spentOnAmmo) || ammo > 2;
+  ui.buy.hidden = mode !== 'boss' || shotsLeft !== bossShotLimit || Boolean(spentOnAmmo) || ammo !== 1;
   ui.buy.disabled = !canBuy(ammo, balance, cost);
   ui['open-menu'].disabled = busy;
   ui['reset-assets'].disabled = busy;
@@ -93,18 +102,29 @@ function render() {
   text('reset-note', busy ? '等待演出結束' : playing ? `結束本輪 · ${resetAmount}` : resetAmount);
   text('gate-number', String(stage).padStart(2, '0'));
   ui['stage-status'].hidden = !playing || transitioning;
-  ui['jackpot-banner'].hidden = !atBoss || ammo < hitsLeft || shotsLeft < hitsLeft;
-  ui['chest-preview'].hidden = atBoss || !playing;
-  if (playing) {
+  ui['run-bonus'].hidden = !playing;
+  text('run-multiplier', multiplierText(multiplier));
+  text('jackpot-banner', `WIN UP TO ${multiplierText(maxBaseMultiplier * multiplier)}`);
+  ui['chest-preview'].hidden = !target;
+  if (playing && !transitioning) {
     if (atBoss) {
       text('stage-plate', '封鎖區首領');
       text('encounter-detail', `剩 ${hitsLeft} 次命中 · 剩 ${shotsLeft} 次開槍`);
-    } else {
-      const type = targets[stage - 1];
-      const { name, drops } = ammoChests[type];
-      ui['chest-preview'].src = chestArt(type);
-      text('stage-plate', name);
-      text('encounter-detail', drops.map((odds, ammo) => `${ammo ? `${ammo} 發` : '空箱'} ${odds}%`).join(' · '));
+    } else if (selecting) {
+      text('stage-plate', `第 ${stage} 關`);
+      text('encounter-detail', '選一個庫進入');
+      for (const vault of ['coin', 'ammo']) {
+        const tier = targets[stage - 1][vault];
+        ui[`vault-${vault}`].dataset.tier = tier;
+        ui[`vault-${vault}-art`].src = chestArt(tier);
+        text(`vault-${vault}-tier`, `${chestTiers[tier].name}・${vault === 'coin' ? '倍率' : '補彈'}`);
+      }
+    } else if (target) {
+      const chest = chestTiers[target];
+      const format = selectedVault === 'coin' ? i => multiplierText(coinMultipliers[i]) : ammoText;
+      ui['chest-preview'].src = chestArt(target);
+      text('stage-plate', `${vaultNames[selectedVault]}・${chest.name}`);
+      text('encounter-detail', chest[selectedVault].map((odds, i) => `${format(i)} ${odds}%`).join(' · '));
     }
   }
   chamberCells.forEach((cell, i) => cell.classList.toggle('loaded', chambers[i]));
@@ -119,15 +139,19 @@ function render() {
   text('buy-cost', balance < cost ? '餘額不足' : signed(-cost));
 }
 
-function finish(cleared, reward = 0) {
+function finish(prize = null) {
   const bet = bets[betIndex];
+  const cleared = Boolean(prize);
+  const reward = prize?.reward ?? 0;
   balance += reward;
   mode = 'result';
   ui.game.dataset.outcome = cleared ? 'clear' : 'miss';
   text('result-caption', cleared ? 'FINAL CHEST' : 'MISSION FAILED');
-  text('result-title', reward === bet * 10 ? '10× 大獎' : cleared ? '最終寶箱' : '任務失敗');
+  text('result-title', prize?.tier === 3 ? `${multiplierText(maxBaseMultiplier * multiplier)} 大獎` : cleared ? '最終寶箱' : '任務失敗');
   text('result-payout', signed(reward));
   text('result-net', `本輪淨額 ${signed(reward - bet - spentOnAmmo)}`);
+  ui['result-breakdown'].hidden = !cleared || multiplier === 1;
+  if (cleared) text('result-breakdown', `${money(prize.baseReward)} × ${multiplierText(multiplier).slice(0, -1)}`);
   hint = !cleared ? '未能擊倒首領' : reward === bet + spentOnAmmo ? '已領回本輪投入' : '獎金已計入餘額';
   render();
   if (cleared) revolverAudio.play('clear');
@@ -181,21 +205,21 @@ async function spinDial(frame, face, selected, start, time) {
   return end;
 }
 
-async function spinChest(type, prizes, formatReward) {
+async function spinChest(kind, type, prizes, formatReward) {
   const frame = ui['loot-wheel'];
   const face = ui['loot-disc'];
   const weights = prizes.map(({ weight }) => weight);
   const selected = weightedIndex(weights);
   delete frame.dataset.spin;
-  frame.dataset.kind = type ? 'ammo' : 'payout';
+  frame.dataset.kind = kind;
   face.style.transform = 'rotate(0deg)';
   face.style.setProperty('--upright', '0deg');
   const pockets = prizes.map(({ reward, tier }, i) => {
     const pocket = document.createElement('div');
     const angle = i * 2 * Math.PI / slots;
-    const jackpot = !type && tier === 3;
-    const count = type ? reward : jackpot ? 1 : tier + 1;
-    const icon = type ? 'assets/cartridge.png' : jackpot ? chestArt('gold') : 'assets/coin.png';
+    const jackpot = kind !== 'ammo' && tier === 3;
+    const count = kind === 'ammo' ? reward : jackpot ? 1 : tier + Number(kind === 'payout');
+    const icon = kind === 'ammo' ? 'assets/cartridge.png' : jackpot ? chestArt('gold') : 'assets/coin.png';
     pocket.className = 'loot-pocket';
     pocket.dataset.count = String(count);
     pocket.classList.toggle('jackpot', jackpot);
@@ -214,7 +238,7 @@ async function spinChest(type, prizes, formatReward) {
   });
   face.replaceChildren(...pockets);
   ui['loot-chest'].src = chestArt(type ?? 'gold');
-  text('loot-title', type ? `${ammoChests[type].name}・彈藥補給` : '最終寶箱');
+  text('loot-title', type ? `${chestTiers[type].name}・${kind === 'coin' ? '倍率獎勵' : '彈藥補給'}` : '最終寶箱');
   text('loot-result', '');
   mode = 'loot';
   render();
@@ -223,7 +247,7 @@ async function spinChest(type, prizes, formatReward) {
   const end = await spinDial(frame, face, selected, 0, 1450);
   face.style.setProperty('--upright', `${-end}deg`);
   pockets[selected].classList.add('landed');
-  return prizes[selected].reward;
+  return prizes[selected];
 }
 
 async function fire() {
@@ -253,25 +277,32 @@ async function fire() {
     shotsLeft--;
     if (outcome.hit) hitsLeft--;
     if (lethal) {
-      const reward = await spinChest(null, finalWheel(bets[betIndex], spentOnAmmo), money);
-      text('loot-result', `獲得 ${money(reward)}`);
+      const prize = await spinChest('payout', null, finalWheel(bets[betIndex], spentOnAmmo, multiplier), money);
+      text('loot-result', `獲得 ${money(prize.reward)}`);
       await pause(1050);
-      return finish(true, reward);
+      return finish(prize);
     }
-    if (!shotsLeft || countAmmo(chambers) < hitsLeft || shotsLeft < hitsLeft) return finish(false);
+    if (!shotsLeft || countAmmo(chambers) < hitsLeft || shotsLeft < hitsLeft) return finish();
     mode = 'boss';
     render();
     return;
   }
   if (!outcome.hit) return advance(hint);
-  const target = targets[stage - 1];
-  const reward = await spinChest(target, supplyWheel(target), ammo => ammo ? `${ammo} 發` : '空箱');
-  const loaded = reward ? reload(reward) : 0;
-  const message = reward ? `抽中 ${reward} 發 · 裝入 ${loaded} 發` : '抽中空箱 · 未取得彈藥';
+  const target = targets[stage - 1][selectedVault];
+  let message;
+  if (selectedVault === 'coin') {
+    const { reward } = await spinChest('coin', target, coinWheel(target), multiplierText);
+    multiplier = stackMultiplier(multiplier, reward);
+    message = `抽中 ${multiplierText(reward)} · 累積 ${multiplierText(multiplier)}`;
+  } else {
+    const { reward } = await spinChest('ammo', target, supplyWheel(target), ammoText);
+    const loaded = reward ? reload(reward) : 0;
+    message = reward ? `抽中 ${reward} 發 · 裝入 ${loaded} 發` : '抽中空箱 · 未取得彈藥';
+  }
   text('loot-result', message);
   render();
   await pause(1050);
-  advance(message);
+  return advance(message);
 }
 
 function start() {
@@ -285,6 +316,14 @@ function start() {
   revolverAudio.startMusic();
   balance -= bet;
   targets = encounters();
+  mode = 'vault';
+  hint = '先選金幣庫或軍械庫';
+  render();
+}
+
+function enterVault(vault) {
+  if (mode !== 'vault') return;
+  selectedVault = vault;
   mode = 'encounter';
   hint = '選擇本關行動';
   render();
@@ -306,11 +345,12 @@ async function advance(message) {
   render();
   await pause(duration / 2);
   stage = nextStage;
+  selectedVault = null;
   revolverAudio.play('lock');
   render();
   await pause(duration / 2);
-  mode = enteringBoss ? 'boss' : 'encounter';
-  if (enteringBoss && !countAmmo(chambers)) return finish(false);
+  mode = enteringBoss ? 'boss' : 'vault';
+  if (enteringBoss && !countAmmo(chambers)) return finish();
   render();
   if (enteringBoss) ui.primary.focus({ preventScroll: true });
 }
@@ -345,6 +385,8 @@ function buyAmmo() {
 function resetRound() {
   mode = 'ready';
   stage = 1;
+  selectedVault = null;
+  multiplier = 1;
   shotsLeft = bossShotLimit;
   hitsLeft = bossHealth;
   spentOnAmmo = 0;
@@ -364,6 +406,8 @@ for (const [id, step] of [['bet-down', -1], ['bet-up', 1]]) {
   ui[id].addEventListener('click', () => { betIndex += step; render(); });
 }
 ui.skip.addEventListener('click', () => { if (mode === 'encounter') advance('已繞過 · 彈藥保留'); });
+ui['vault-coin'].addEventListener('click', () => enterVault('coin'));
+ui['vault-ammo'].addEventListener('click', () => enterVault('ammo'));
 ui.fire.addEventListener('click', fire);
 ui.buy.addEventListener('click', buyAmmo);
 ui['open-menu'].addEventListener('click', () => ui.menu.showModal());

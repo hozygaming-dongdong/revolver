@@ -49,11 +49,11 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .step:disabled { opacity: .38; }
 .menu-toggle { display: grid; place-items: center; }
 .menu-toggle span { width: 18px; height: 2px; border-radius: 1px; background: currentColor; box-shadow: 0 -6px, 0 6px; }
-.ladder { padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; list-style: none; }
-.ladder li { display: grid; place-content: center; text-align: center; padding: 6px 0; color: #caad88; font-size: .76rem; font-weight: 700; }
+.ladder { padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; list-style: none; }
+.ladder li { display: grid; place-content: center; text-align: center; padding: 6px 0; color: #caad88; font-size: clamp(.66rem, 3.2vw, .76rem); font-weight: 700; }
 .ladder li:last-child { background: linear-gradient(#431d10, #210b09); color: #ffce84; }
 .ladder-jackpot { display: none; }
-[data-mode='ready'] .ladder { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(86px, 1.35fr); }
+[data-mode='ready'] .ladder { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(86px, 1.35fr); }
 [data-mode='ready'] .ladder li:last-child { border-color: #c58344; }
 [data-mode='ready'] .ladder-jackpot {
   display: block; margin-top: 2px; color: #ffda8f; font: 900 .59rem/1.2 var(--display);
@@ -98,9 +98,15 @@ button:not(:disabled):active { filter: brightness(1.24); }
   margin: 0; padding: 4px 9px; color: #ffe3ba; background: #170e0cdb; border: 1px solid #795134;
   font-size: clamp(.75rem, 3.2vw, .88rem); font-weight: 700;
 }
+.run-bonus {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  margin-top: 5px; padding: 4px 8px; border: 1px solid #704c32; background: #1e130e;
+  color: #e8c6a6; font-size: clamp(.68rem, 3vw, .84rem); font-weight: 700;
+}
+.run-bonus strong { color: #ffda8f; }
 .jackpot-banner {
-  margin: 3px 0 0; color: #ffdc94; font: 800 clamp(1rem, 5vw, 1.5rem)/1.1 var(--display);
-  letter-spacing: .07em; text-shadow: 0 2px 3px #000, 0 0 15px #e87023;
+  color: #ffdc94; font: 900 clamp(.65rem, 2.9vw, .89rem)/1.1 var(--display);
+  letter-spacing: .035em; text-align: right; text-shadow: 0 2px 3px #000, 0 0 12px #d6752a;
 }
 .intro { position: absolute; z-index: 2; top: 5%; width: 100%; text-align: center; text-shadow: 0 3px 2px #211006, 0 6px 20px #000; }
 .title-mark { color: #f6c482; display: flex; align-items: center; gap: 9px; justify-content: center; font-size: .9rem; }
@@ -174,6 +180,16 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .choice strong { color: #ffdfaa; font-size: clamp(.87rem, 4vw, 1.12rem); white-space: nowrap; }
 .choice small { color: #ebc69f; font-weight: 700; font-size: .72rem; }
 .choice-fire { background: linear-gradient(#925632, #432411 65%, #30180d); border-color: #ffc275; }
+.vault-choice {
+  grid-template-columns: minmax(36px, 48px) auto; align-items: center; justify-content: center;
+  gap: 5px; padding: 5px; text-align: left;
+}
+.vault-choice img { width: 100%; height: auto; max-height: 37px; object-fit: contain; filter: drop-shadow(0 3px 4px #0008); }
+.vault-choice small { display: block; white-space: nowrap; }
+.vault-coin { background: linear-gradient(140deg, #63391b, #23160f 77%); }
+.vault-ammo { background: linear-gradient(140deg, #3d3c36, #211813 77%); }
+.vault-choice[data-tier='silver'] { border-color: #a2b2b8; }
+.vault-choice[data-tier='gold'] { border-color: #ffd282; box-shadow: inset 0 0 0 2px #50341d, 0 0 10px #f3a74e44; }
 
 .loot-overlay {
   position: absolute; z-index: 6; inset: 0; display: grid; place-items: center; padding: 10px;
@@ -280,6 +296,7 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .result-caption { margin: 0; color: #f9c484; font: 700 .73rem var(--display); letter-spacing: .13em; }
 .settlement h2 { margin: 7px 0; font-size: clamp(1.9rem, 8vw, 3rem); color: #ffe2a5; }
 .settlement strong { display: inline-block; color: var(--gold); font: 800 clamp(1.5rem, 6vw, 2.35rem) var(--display); }
+.result-breakdown { margin: 5px 0 0; color: #e9c08d; font-size: .85rem; font-weight: 700; }
 .settlement p:last-child { margin: 8px 0 0; color: #e7caab; font-size: .88rem; }
 [data-outcome='miss'] .settlement h2 { color: #ffad91; }
 [data-outcome='clear'] #result-payout { animation: payout-pop 280ms ease-out; }
