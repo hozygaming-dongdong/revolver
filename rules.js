@@ -18,7 +18,7 @@ const revolverRules = (() => {
   const initialCylinder = () => Array.from({ length: slots }, (_, i) => i < startAmmo);
   const countAmmo = chambers => chambers.filter(Boolean).length;
   const price = bet => bet / 5;
-  const canBuy = (ammo, balance, cost) => ammo === 1 && balance >= cost;
+  const canBuy = (ammo, mode) => mode === 'vault' ? ammo < 2 : mode === 'boss' && ammo === 1;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
 
   function loadAmmo(chambers, amount = 1) {

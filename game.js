@@ -57,6 +57,10 @@ const chamberCells = chambers.map((_, i) => {
   return cell;
 });
 
+function canOfferAmmo(ammo) {
+  return canBuy(ammo, mode) && (mode !== 'boss' || shotsLeft === bossShotLimit);
+}
+
 function render() {
   const bet = bets[betIndex];
   const ammo = countAmmo(chambers);
@@ -87,8 +91,8 @@ function render() {
   ui.primary.disabled = busy || needsReset;
   ui.skip.disabled = busy;
   ui.fire.disabled = busy || ammo === 0;
-  ui.buy.hidden = mode !== 'boss' || shotsLeft !== bossShotLimit || Boolean(spentOnAmmo) || ammo !== 1;
-  ui.buy.disabled = !canBuy(ammo, balance, cost);
+  ui.buy.hidden = !canOfferAmmo(ammo);
+  ui.buy.disabled = balance < cost;
   ui['open-menu'].disabled = busy;
   ui['reset-assets'].disabled = busy;
   ui['bet-down'].disabled = !ready || betIndex === 0;
@@ -372,9 +376,8 @@ function reload(amount) {
 }
 
 function buyAmmo() {
-  if (mode !== 'boss' || shotsLeft !== bossShotLimit || spentOnAmmo) return;
   const cost = price(bets[betIndex]);
-  if (!canBuy(countAmmo(chambers), balance, cost)) return;
+  if (!canOfferAmmo(countAmmo(chambers)) || balance < cost) return;
   balance -= cost;
   spentOnAmmo += cost;
   reload(1);
