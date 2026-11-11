@@ -50,8 +50,15 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .menu-toggle { display: grid; place-items: center; }
 .menu-toggle span { width: 18px; height: 2px; border-radius: 1px; background: currentColor; box-shadow: 0 -6px, 0 6px; }
 .ladder { padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; list-style: none; }
-.ladder li { text-align: center; padding: 6px 0; color: #caad88; font-size: .76rem; font-weight: 700; }
+.ladder li { display: grid; place-content: center; text-align: center; padding: 6px 0; color: #caad88; font-size: .76rem; font-weight: 700; }
 .ladder li:last-child { background: linear-gradient(#431d10, #210b09); color: #ffce84; }
+.ladder-jackpot { display: none; }
+[data-mode='ready'] .ladder { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(86px, 1.35fr); }
+[data-mode='ready'] .ladder li:last-child { border-color: #c58344; }
+[data-mode='ready'] .ladder-jackpot {
+  display: block; margin-top: 2px; color: #ffda8f; font: 900 .59rem/1.2 var(--display);
+  letter-spacing: .035em; white-space: nowrap; text-shadow: 0 0 9px #ef7c3c;
+}
 .ladder .current { color: #fff3cb; border-color: #ffb859; box-shadow: inset 0 0 11px #f2953b66, 0 0 7px #fb883b80; }
 .ladder .cleared { color: #ffd987; border-color: #8b643c; background: linear-gradient(#493320, #271d13); }
 
@@ -173,39 +180,66 @@ button:not(:disabled):active { filter: brightness(1.24); }
   background: radial-gradient(ellipse at center, #1c100c9c, #0a0605f0); backdrop-filter: blur(3px);
 }
 .loot-panel {
-  width: min(100%, 415px); padding: clamp(12px, 3svh, 24px) 12px 13px; text-align: center;
-  border: 1px solid #b98151; background: linear-gradient(155deg, #3c271b, #1a100d 58%, #2d1b11);
-  box-shadow: inset 0 0 0 3px #21150f, inset 0 0 0 4px #664129, 0 12px 40px #000a;
+  width: min(100%, 420px); padding: clamp(12px, 3svh, 24px) 12px 13px; text-align: center;
+  border: 1px solid #bb8453; background: radial-gradient(ellipse at 50% 44%, #52321a, #21140f 61%, #160e0b);
+  box-shadow: inset 0 0 0 3px #21150f, inset 0 0 0 4px #8b5a36, 0 12px 40px #000b;
 }
-.loot-panel h2 { margin: 0 0 16px; color: #ffdfaa; font-size: clamp(1.12rem, 5vw, 1.5rem); }
+.loot-panel h2 {
+  margin: 0 0 17px; color: #ffdfaa; font-size: clamp(1.12rem, 5vw, 1.5rem);
+  letter-spacing: .09em; text-shadow: 0 2px 3px #130b08;
+}
 .loot-wheel {
-  position: relative; width: min(100%, 316px, 51dvh); aspect-ratio: 1; margin: 0 auto;
-  filter: drop-shadow(0 6px 14px #000c);
+  position: relative; width: min(100%, 350px, 53dvh); aspect-ratio: 1; margin: 0 auto;
+  filter: drop-shadow(0 7px 11px #000c);
 }
-.loot-wheel .pointer { z-index: 3; width: 13%; height: 11%; top: -3.5%; }
+.loot-wheel .pointer {
+  z-index: 3; width: 13%; height: 11%; top: -3.5%;
+  background: linear-gradient(#fff3c8, #ffcd74 24%, #a14b22 26%, #ffca61 37%, #f59b32 72%, #b4461b);
+}
 .loot-disc {
   position: absolute; inset: 0; border-radius: 50%;
-  background: radial-gradient(circle, #261811 0 18%, #ad784b 18.5%, #2a170f 20%, transparent 21%),
-    repeating-conic-gradient(from -30deg, #352015 0deg, #a97548 23deg, #51301e 54deg, #24130d 59deg, #ba8657 60deg);
-  box-shadow: inset 0 0 0 2px #edbd82, inset 0 0 0 6px #332113, inset 0 0 0 8px #b17e54, inset 0 0 34px #1d0d07;
+  background: radial-gradient(circle, #15100d 0 19%, #946039 19.5%, #1e110b 20.5%, #f2bd80 21%, #47301e 22%, transparent 23%),
+    repeating-conic-gradient(from -30deg, #29170f 0deg, #6a462d 4deg, #bb8b58 25deg, #735236 38deg, #422718 56deg, #b78960 59deg, #302015 60deg);
+  box-shadow: inset 0 0 0 2px #f0c38f, inset 0 0 0 6px #322013, inset 0 0 0 9px #a87146,
+    inset 0 0 0 11px #40291c, inset 0 0 31px #190c06, 0 0 0 1px #26170e;
 }
 .loot-chest {
-  position: absolute; z-index: 2; top: 50%; left: 50%; width: 29%; height: 26%;
+  position: absolute; z-index: 2; top: 50%; left: 50%; width: 30%; height: 26%;
   transform: translate(-50%, -50%); object-fit: contain; filter: drop-shadow(0 3px 5px #000);
 }
 .loot-pocket {
-  position: absolute; top: var(--y); left: var(--x); width: 26%; aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotate(var(--upright)); display: grid; place-content: center; gap: 2px;
-  border: 1px solid #b98459; border-radius: 50%; background: radial-gradient(circle at 50% 20%, #442d20, #170e0a 75%);
-  box-shadow: inset 0 0 0 3px #25160e, inset 0 0 10px #000a, 0 0 0 2px #392117;
+  --icon-width: 38%; --icon-margin: -3%;
+  position: absolute; top: var(--y); left: var(--x); width: 27%; aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(var(--upright)); display: flex; justify-content: center; align-items: center;
+  border: 1px solid #c69464; border-radius: 50%; background: radial-gradient(circle at 50% 68%, #392217, #100a07 75%);
+  box-shadow: inset 0 0 0 3px #21140e, inset 0 3px 12px #000d, 0 0 0 2px #4d2e1d, 0 3px 5px #0008;
 }
-.loot-pocket strong { color: #ffe8bc; font-size: clamp(.72rem, 3.2vw, 1.07rem); white-space: nowrap; }
-.loot-pocket small { color: #dfb78a; font-size: clamp(.64rem, 2.6vw, .79rem); font-variant-numeric: tabular-nums; }
+.loot-pocket[data-count='0'] { background: radial-gradient(circle at 50% 77%, #24160e, #090605 71%); }
+.loot-pocket[data-count='1'] { --icon-width: 69%; --icon-margin: 0%; }
+.loot-pocket[data-count='2'] { --icon-width: 46%; --icon-margin: -1%; }
+.loot-icon {
+  flex: 0 0 auto; width: var(--icon-width); height: 73%; margin-inline: var(--icon-margin);
+  object-fit: contain; filter: drop-shadow(0 2px 3px #000c); pointer-events: none;
+}
+[data-kind='ammo'] .loot-pocket[data-count='3'] { --icon-width: 43%; --icon-margin: -6%; }
+[data-kind='ammo'] .loot-icon { rotate: -44deg; }
+[data-kind='payout'] .loot-pocket[data-count='3'] .loot-icon {
+  position: absolute; width: 46%; height: 46%; margin: 0;
+}
+[data-kind='payout'] .loot-pocket[data-count='3'] .loot-icon:first-child { top: 10%; left: 27%; }
+[data-kind='payout'] .loot-pocket[data-count='3'] .loot-icon:nth-child(2) { top: 39%; left: 9%; }
+[data-kind='payout'] .loot-pocket[data-count='3'] .loot-icon:last-child { top: 39%; right: 9%; }
+.loot-pocket.jackpot {
+  --icon-width: 79%;
+  border-color: #ffcf72; background: radial-gradient(circle at 50% 55%, #784517, #26120b 75%);
+  box-shadow: inset 0 0 0 3px #5e3317, inset 0 0 11px #f8aa3c75, 0 0 9px #ffad40a8;
+}
 .loot-pocket.landed {
-  border-color: #ffdb95; background: radial-gradient(circle at 50% 20%, #855424, #301a0e 80%);
-  box-shadow: inset 0 0 12px #ffb75260, 0 0 14px #ffb757;
+  border-color: #ffedb4; background: radial-gradient(circle at 50% 54%, #885626, #3e220e 80%);
+  box-shadow: inset 0 0 10px #ffc97090, 0 0 0 2px #f8ba56, 0 0 17px #ffb757;
 }
 .loot-result { margin: 12px 0 0; min-height: 1.4em; color: #ffe2a8; font-size: .94rem; font-weight: 800; }
+[data-spin='locked'] + .loot-result { color: #fff1c8; text-shadow: 0 0 10px #f6a044; }
 
 .stage-transition {
   --gate-edge: #d6a16d;

@@ -31,7 +31,16 @@ let hint = readyHint;
 
 const stageCells = Array.from({ length: finalStage }, (_, i) => {
   const cell = document.createElement('li');
-  cell.textContent = i + 1 === finalStage ? '首領' : `第 ${i + 1} 關`;
+  if (i + 1 === finalStage) {
+    const name = document.createElement('span');
+    name.textContent = '首領';
+    const jackpot = document.createElement('small');
+    jackpot.className = 'ladder-jackpot';
+    jackpot.textContent = 'WIN UP TO 10×';
+    cell.append(name, jackpot);
+  } else {
+    cell.textContent = `第 ${i + 1} 關`;
+  }
   ui.ladder.append(cell);
   return cell;
 });
@@ -176,28 +185,37 @@ async function spinChest(type, prizes, formatReward) {
   const frame = ui['loot-wheel'];
   const face = ui['loot-disc'];
   const weights = prizes.map(({ weight }) => weight);
-  const total = weights.reduce((sum, weight) => sum + weight, 0);
   const selected = weightedIndex(weights);
   delete frame.dataset.spin;
+  frame.dataset.kind = type ? 'ammo' : 'payout';
   face.style.transform = 'rotate(0deg)';
   face.style.setProperty('--upright', '0deg');
-  const pockets = prizes.map(({ reward, weight }, i) => {
+  const pockets = prizes.map(({ reward, tier }, i) => {
     const pocket = document.createElement('div');
     const angle = i * 2 * Math.PI / slots;
+    const jackpot = !type && tier === 3;
+    const count = type ? reward : jackpot ? 1 : tier + 1;
+    const icon = type ? 'assets/cartridge.png' : jackpot ? chestArt('gold') : 'assets/coin.png';
     pocket.className = 'loot-pocket';
+    pocket.dataset.count = String(count);
+    pocket.classList.toggle('jackpot', jackpot);
+    pocket.setAttribute('role', 'img');
+    pocket.setAttribute('aria-label', formatReward(reward));
     pocket.style.setProperty('--x', `${50 + 33 * Math.sin(angle)}%`);
     pocket.style.setProperty('--y', `${50 - 33 * Math.cos(angle)}%`);
-    const amount = document.createElement('strong');
-    const odds = document.createElement('small');
-    amount.textContent = formatReward(reward);
-    odds.textContent = `${(100 * weight / total).toLocaleString('zh-TW', { maximumFractionDigits: 4 })}%`;
-    pocket.append(amount, odds);
+    for (let j = 0; j < count; j++) {
+      const picture = document.createElement('img');
+      picture.className = 'loot-icon';
+      picture.src = icon;
+      picture.alt = '';
+      pocket.append(picture);
+    }
     return pocket;
   });
   face.replaceChildren(...pockets);
   ui['loot-chest'].src = chestArt(type ?? 'gold');
   text('loot-title', type ? `${ammoChests[type].name}・彈藥補給` : '最終寶箱');
-  text('loot-result', '各格標示獎項與機率');
+  text('loot-result', '');
   mode = 'loot';
   render();
   await pause(700);

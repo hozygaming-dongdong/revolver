@@ -51,7 +51,7 @@ const revolverRules = (() => {
     const first = Math.ceil(weights[0] / 2);
     const second = Math.ceil(weights[1] / 2);
     const pockets = [first, second, weights[2], weights[0] - first, weights[1] - second, weights[3]];
-    return [0, 1, 2, 0, 1, 3].map((tier, i) => ({ reward: rewards[tier], weight: pockets[i] }));
+    return [0, 1, 2, 0, 1, 3].map((tier, i) => ({ tier, reward: rewards[tier], weight: pockets[i] }));
   }
 
   const supplyWheel = type => wheelSlots(ammoChests[type].drops, [0, 1, 2, 3]);
