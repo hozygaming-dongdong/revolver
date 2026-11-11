@@ -124,7 +124,7 @@ function render() {
       const format = selectedVault === 'coin' ? i => multiplierText(coinMultipliers[i]) : ammoText;
       ui['chest-preview'].src = chestArt(target);
       text('stage-plate', `${vaultNames[selectedVault]}・${chest.name}`);
-      text('encounter-detail', chest[selectedVault].map((odds, i) => `${format(i)} ${odds}%`).join(' · '));
+      text('encounter-detail', chest[selectedVault].flatMap((odds, i) => odds ? [`${format(i)} ${odds}%`] : []).join(' · '));
     }
   }
   chamberCells.forEach((cell, i) => cell.classList.toggle('loaded', chambers[i]));

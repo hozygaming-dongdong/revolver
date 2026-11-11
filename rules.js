@@ -3,16 +3,16 @@ const revolverRules = (() => {
   const startAmmo = 3;
   const ammoLimit = slots;
   const finalStage = 6;
-  const bossShotLimit = 4;
+  const bossShotLimit = 3;
   const bossHealth = 2;
   const chestTiers = {
-    bronze: { name: '銅箱', encounter: 40, ammo: [50, 35, 12, 3], coin: [55, 34, 10, 1] },
-    silver: { name: '銀箱', encounter: 40, ammo: [20, 37, 35, 8], coin: [15, 25, 30, 30] },
-    gold: { name: '金箱', encounter: 20, ammo: [10, 25, 50, 15], coin: [5, 10, 25, 60] },
+    bronze: { name: '銅箱', encounter: 45, ammo: [50, 35, 12, 3], coin: [55, 34, 10, 1] },
+    silver: { name: '銀箱', encounter: 43, ammo: [20, 37, 35, 8], coin: [15, 25, 30, 30] },
+    gold: { name: '金箱', encounter: 12, ammo: [0, 0, 80, 20], coin: [0, 0, 35, 65] },
   };
   const coinMultipliers = [1, 1.2, 1.5, 2];
   const maxBaseMultiplier = 10;
-  const finalChestWeights = [775_427, 80_000, 144_473, 100];
+  const finalChestWeights = [572_355, 80_000, 347_545, 100];
   const finalChestMultipliers = [1, 1.5, 3, maxBaseMultiplier];
 
   const initialCylinder = () => Array.from({ length: slots }, (_, i) => i < startAmmo);
@@ -49,12 +49,18 @@ const revolverRules = (() => {
     return Array.from({ length: finalStage - 1 }, () => ({ coin: roll(), ammo: roll() }));
   }
 
-  // Split the two common rewards across a pair of pockets each without changing their total odds.
+  // Spread possible rewards across the six pockets while preserving their total odds.
   function wheelSlots(weights, rewards) {
-    const first = Math.ceil(weights[0] / 2);
-    const second = Math.ceil(weights[1] / 2);
-    const pockets = [first, second, weights[2], weights[0] - first, weights[1] - second, weights[3]];
-    return [0, 1, 2, 0, 1, 3].map((tier, i) => ({ tier, reward: rewards[tier], weight: pockets[i] }));
+    const active = weights.flatMap((weight, tier) => weight > 0 ? [tier] : []);
+    const order = active.length === 4 ? [0, 1, 2, 0, 1, 3] : Array.from({ length: slots }, (_, i) => active[i % active.length]);
+    const counts = weights.map((_, tier) => order.filter(index => index === tier).length);
+    const remaining = [...weights];
+    return order.map(tier => {
+      const weight = Math.ceil(remaining[tier] / counts[tier]);
+      remaining[tier] -= weight;
+      counts[tier]--;
+      return { tier, reward: rewards[tier], weight };
+    });
   }
 
   const supplyWheel = type => wheelSlots(chestTiers[type].ammo, [0, 1, 2, 3]);
