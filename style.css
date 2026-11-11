@@ -296,6 +296,7 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .result-caption { margin: 0; color: #f9c484; font: 700 .73rem var(--display); letter-spacing: .13em; }
 .settlement h2 { margin: 7px 0; font-size: clamp(1.9rem, 8vw, 3rem); color: #ffe2a5; }
 .settlement strong { display: inline-block; color: var(--gold); font: 800 clamp(1.5rem, 6vw, 2.35rem) var(--display); }
+.result-breakdown { margin: 5px 0 0; color: #e9c08d; font-size: .85rem; font-weight: 700; }
 .settlement p:last-child { margin: 8px 0 0; color: #e7caab; font-size: .88rem; }
 [data-outcome='miss'] .settlement h2 { color: #ffad91; }
 [data-outcome='clear'] #result-payout { animation: payout-pop 280ms ease-out; }

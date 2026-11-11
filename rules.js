@@ -6,21 +6,19 @@ const revolverRules = (() => {
   const bossShotLimit = 3;
   const bossHealth = 2;
   const chestTiers = {
-    bronze: { name: '銅箱', encounter: 45, ammo: [5, 65, 28, 2], coin: [100, 0] },
-    silver: { name: '銀箱', encounter: 43, ammo: [0, 50, 43, 7], coin: [85, 15] },
-    gold: { name: '金箱', encounter: 12, ammo: [0, 0, 80, 20], coin: [40, 60] },
+    bronze: { name: '銅箱', encounter: 45, ammo: [5, 65, 28, 2], coin: [55, 34, 10, 1] },
+    silver: { name: '銀箱', encounter: 43, ammo: [0, 50, 43, 7], coin: [15, 25, 30, 30] },
+    gold: { name: '金箱', encounter: 12, ammo: [0, 0, 80, 20], coin: [0, 0, 35, 65] },
   };
-  const prizeTables = [
-    { multipliers: [1, 1.2, 1.5, 2], weights: [8200, 1300, 490, 10] },
-    { multipliers: [1, 1.5, 3, 5], weights: [2000, 2628, 5322, 50] },
-    { multipliers: [1, 2, 4, 10], weights: [1000, 2490, 6500, 10] },
-  ];
-  const prizeCaps = prizeTables.map(({ multipliers }) => multipliers.at(-1));
+  const coinMultipliers = [1, 1.2, 1.5, 2];
+  const maxBaseMultiplier = 10;
+  const finalChestWeights = [963_327, 30_000, 6_573, 100];
+  const finalChestMultipliers = [1, 1.5, 3, maxBaseMultiplier];
 
   const initialCylinder = () => Array.from({ length: slots }, (_, i) => i < startAmmo);
   const countAmmo = chambers => chambers.filter(Boolean).length;
   const price = bet => bet / 5;
-  const canBuy = (ammo, mode) => mode === 'vault' ? ammo < 2 : mode === 'boss' && ammo === 1;
+  const canBuy = (ammo, mode) => mode === 'vault' ? ammo < 3 : mode === 'boss' && ammo === 1;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
 
   function loadAmmo(chambers, amount = 1) {
@@ -66,17 +64,19 @@ const revolverRules = (() => {
   }
 
   const supplyWheel = type => wheelSlots(chestTiers[type].ammo, [0, 1, 2, 3]);
-  const coinWeights = (type, prizeLevel) => prizeLevel === 0 ? chestTiers[type].coin : [100, 0];
-  const coinWheel = (type, prizeLevel) => wheelSlots(coinWeights(type, prizeLevel), [1, 2]);
-  function finalWheel(bet, spent, prizeLevel) {
-    const { multipliers, weights } = prizeTables[prizeLevel];
-    return wheelSlots(weights, multipliers.map(value => Math.max(bet + spent, Math.round(bet * value))));
+  const coinWheel = type => wheelSlots(chestTiers[type].coin, coinMultipliers);
+  const stackMultiplier = (current, earned) => Math.round(current * earned * 100_000) / 100_000;
+  function finalWheel(bet, spent, multiplier) {
+    const baseRewards = finalChestMultipliers.map(value => Math.max(bet + spent, bet * value));
+    return wheelSlots(finalChestWeights, baseRewards).map(({ tier, weight, reward }) => ({
+      tier, weight, baseReward: reward, reward: Math.round(reward * multiplier),
+    }));
   }
 
   return {
-    slots, startAmmo, ammoLimit, finalStage, bossShotLimit, bossHealth, chestTiers, prizeCaps,
+    slots, startAmmo, ammoLimit, finalStage, bossShotLimit, bossHealth, chestTiers, coinMultipliers, maxBaseMultiplier,
     initialCylinder, countAmmo, price, canBuy, chamberIndex, loadAmmo, shoot, encounters,
-    supplyWheel, coinWeights, coinWheel, finalWheel, weightedIndex,
+    supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex,
   };
 })();
 
