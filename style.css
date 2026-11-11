@@ -50,7 +50,7 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .step:disabled { opacity: .38; }
 .menu-toggle { display: grid; place-items: center; }
 .menu-toggle span { width: 18px; height: 2px; border-radius: 1px; background: currentColor; box-shadow: 0 -6px, 0 6px; }
-.ladder { padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; list-style: none; }
+.ladder { padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; list-style: none; }
 .ladder li { text-align: center; padding: 4px 0 5px; color: #caad88; }
 .ladder span { display: block; font-size: .63rem; font-weight: 700; }
 .ladder b { display: block; font: 700 clamp(.75rem, 3.6vw, 1.21rem)/1.22 var(--display); }

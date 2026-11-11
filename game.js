@@ -1,17 +1,19 @@
 const {
-  slots, multipliers, finalStage, ammoLimit, initialCylinder, countAmmo, canBuy, loadAmmo,
+  slots, multiplierScale, multipliers, finalStage, ammoLimit, initialCylinder, countAmmo, canBuy, loadAmmo,
   chamberIndex, shoot, payout, price,
 } = revolverRules;
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
 const text = (id, value) => { ui[id].textContent = value; };
-const money = value => '$' + value.toLocaleString('zh-TW');
+const money = cents => '$' + (cents / 100).toLocaleString('zh-TW', {
+  minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2,
+});
 const signed = value => `${value >= 0 ? '+' : '−'}${money(Math.abs(value))}`;
-const multiple = stage => `${(multipliers[stage] / 100).toFixed(2)}×`;
+const multiple = stage => `${(multipliers[stage] / multiplierScale).toFixed(3)}×`;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const wait = ms => new Promise(resolve => setTimeout(resolve, reducedMotion.matches ? Math.min(ms, 140) : ms));
-const bets = [100, 200, 500, 1000];
-const startingBalance = 10000;
+const bets = [10_000, 20_000, 50_000, 100_000];
+const startingBalance = 1_000_000;
 const readyHint = '按下開始遊戲，進入封鎖區';
 
 let mode = 'ready';
@@ -61,7 +63,7 @@ function render() {
   text('hint', needsReset ? '餘額不足，請從選單重設資產' : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足` : hint);
   const resetAmount = money(startingBalance);
   text('reset-note', spinning ? '等待射擊結束' : mode === 'aim' || deciding ? `結束本輪 · ${resetAmount}` : resetAmount);
-  text('gate-number', String(Math.min(finalStage + 1, activeStage + (deciding ? 0 : 1))).padStart(2, '0'));
+  text('gate-number', String(Math.min(finalStage, activeStage + (deciding ? 0 : 1))).padStart(2, '0'));
   ui['stage-plate'].hidden = ready || finished;
   text('stage-plate', deciding ? `第 ${cleared} 關完成 → 第 ${activeStage} 關` : `第 ${activeStage} 關 / ${finalStage}`);
   chamberCells.forEach((cell, i) => cell.classList.toggle('loaded', chambers[i]));
@@ -73,7 +75,7 @@ function render() {
     else cell.removeAttribute('aria-current');
   });
   if (deciding) {
-    const cost = price(bet, cleared);
+    const cost = price(bet, cleared, ammo);
     text('cash-multiple', multiple(cleared));
     text('cash-amount', signed(payout(bet, cleared)));
     text('keep-odds', `${ammo}/${slots}`);
@@ -197,7 +199,7 @@ function advance(buy) {
   const ammo = countAmmo(chambers);
   let reloadedSlot;
   if (buy) {
-    const cost = price(bet, cleared);
+    const cost = price(bet, cleared, ammo);
     if (!canBuy(ammo, balance, cost)) return;
     balance -= cost;
     spentOnAmmo += cost;
