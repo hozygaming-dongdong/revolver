@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#15100d">
   <meta name="description" content="管理六格左輪的彈藥，打倒第五關首領，開啟最終寶箱。">
   <title>REVOLVER · 封鎖區</title>
-  <link rel="stylesheet" href="style.css?v=4">
-  <script defer src="rules.js?v=4"></script>
+  <link rel="stylesheet" href="style.css?v=6">
+  <script defer src="rules.js?v=6"></script>
   <script defer src="audio.js?v=4"></script>
-  <script defer src="game.js?v=4"></script>
+  <script defer src="game.js?v=6"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -34,11 +34,12 @@
     <div class="arena" id="arena">
       <div class="gate-number" id="gate-number" aria-hidden="true">01</div>
       <div class="stage-status" id="stage-status" hidden>
-        <div class="stage-plate" id="stage-plate"></div>
+        <div class="stage-plate"><img id="chest-preview" alt="" hidden><span id="stage-plate"></span></div>
         <p class="encounter-detail" id="encounter-detail"></p>
         <p class="jackpot-banner" id="jackpot-banner" hidden>WIN UP TO 10×</p>
       </div>
-      <img class="enemy" src="assets/zombie.png" alt="">
+      <img class="enemy" id="enemy" src="assets/zombie.png" alt="">
+      <img class="enemy boss-enemy" id="boss-enemy" src="assets/boss.png" alt="" hidden>
       <img class="shooter" src="assets/gunslinger.png" alt="">
       <div class="muzzle" id="muzzle" aria-hidden="true"></div>
       <div class="impact" id="impact" aria-hidden="true"></div>
@@ -63,7 +64,10 @@
           <span class="pointer"></span>
           <div class="cylinder" id="cylinder"></div>
         </div>
-        <p class="ammo-readout">彈藥 <strong id="ammo">3 / 6</strong><span id="ammo-extra" hidden></span></p>
+        <div class="ammo-controls">
+          <p class="ammo-readout">彈藥 <strong id="ammo">3 / 6</strong></p>
+          <button class="buy-ammo" id="buy" type="button" hidden>加購 1 發 <small id="buy-cost"></small></button>
+        </div>
         <div class="decisions" id="decisions" role="group" aria-label="本關行動" hidden>
           <button class="choice" id="skip" type="button">
             <strong>繞過</strong><small>保留彈藥</small>
@@ -71,14 +75,29 @@
           <button class="choice choice-fire" id="fire" type="button">
             <strong>開槍</strong><small id="fire-odds"></small>
           </button>
-          <button class="choice" id="buy" type="button">
-            <strong>加購 1 發</strong><small id="buy-cost"></small>
-          </button>
         </div>
         <button class="primary" id="primary" type="button">
           <img src="assets/cartridge.png" width="40" height="40" alt=""><span id="primary-text">開始遊戲</span>
         </button>
         <p class="hint" id="hint" role="status">保留彈藥，打倒第五關首領</p>
+      </div>
+      <section class="loot-overlay" id="loot" aria-labelledby="loot-title" hidden>
+        <div class="loot-panel">
+          <h2 id="loot-title"></h2>
+          <div class="loot-wheel" id="loot-wheel">
+            <span class="pointer" aria-hidden="true"></span>
+            <div class="loot-disc" id="loot-disc"></div>
+            <img class="loot-chest" id="loot-chest" alt="">
+          </div>
+          <p class="loot-result" id="loot-result" role="status"></p>
+        </div>
+      </section>
+      <div class="stage-transition" id="stage-transition" hidden>
+        <div class="transition-plate" role="status">
+          <p id="transition-result"></p>
+          <strong id="transition-title"></strong>
+          <p id="transition-boss" hidden></p>
+        </div>
       </div>
     </div>
   </main>
@@ -103,8 +122,9 @@
   <dialog id="rules" aria-labelledby="rules-title">
     <h2 id="rules-title">遊戲說明</h2>
     <p>每輪從 3 發起手，最多可裝 4 發。每次開槍都從六格均勻抽一格，抽到子彈才消耗該發。</p>
-    <p>前四關各選一次：繞過、開槍，或付押注的 20% 補一發並繞過。打倒不同殭屍可獲得 2 發普通彈、寶箱 1.5× 加成，或裝入一發金彈。打空仍進下一關。</p>
-    <p>第五關最多開四槍。普通彈需命中兩次，抽中金彈可一槍擊殺。打倒首領會自動開箱，至少拿回押注和實付補彈費，最高為原押注的 10×。失敗時本局投入不退回。</p>
+    <p>前四關可繞過或開槍。打倒殭屍會轉動銅、銀或金箱的轉輪，依停格獲得 0 至 3 發，最多裝到 4 發。打空仍進下一關。</p>
+    <p>進首領戰後、第一槍前，剩 2 發以下可付押注的 20% 加購一發，每局一次。第五關最多開四槍，要命中兩次。</p>
+    <p>擊倒首領會轉動最終寶箱。至少拿回押注和實付補彈費，最高為原押注的 10×。失敗時本局投入不退回。</p>
     <form method="dialog"><button class="primary">返回遊戲</button></form>
   </dialog>
 </body>
