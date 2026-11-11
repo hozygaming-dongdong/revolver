@@ -15,8 +15,8 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wait = ms => pause(reducedMotion.matches ? Math.min(ms, 140) : ms);
 const bets = [10_000, 20_000, 50_000, 100_000];
 const startingBalance = 1_000_000;
-const readyHint = '補彈或累積倍率，挑戰第六關首領';
 const chestArt = type => `assets/chest-${type}.png`;
+const finalCache = 'assets/final-cache.webp';
 const multiplierText = multiplier => `${multiplier.toLocaleString('zh-TW', { maximumFractionDigits: 5 })}×`;
 const ammoText = ammo => ammo ? `${ammo} 發` : '空箱';
 const vaultNames = { coin: '金幣庫', ammo: '軍械庫' };
@@ -33,20 +33,11 @@ let hitsLeft = bossHealth;
 let spentOnAmmo = 0;
 let chambers = initialCylinder();
 let rotation = 0;
-let hint = readyHint;
+let hint = '';
 
 const stageCells = Array.from({ length: finalStage }, (_, i) => {
   const cell = document.createElement('li');
-  if (i + 1 === finalStage) {
-    const name = document.createElement('span');
-    name.textContent = '首領';
-    const jackpot = document.createElement('small');
-    jackpot.className = 'ladder-jackpot';
-    jackpot.textContent = `WIN UP TO ${multiplierText(maxBaseMultiplier)}`;
-    cell.append(name, jackpot);
-  } else {
-    cell.textContent = `第 ${i + 1} 關`;
-  }
+  cell.textContent = i + 1 === finalStage ? '首領' : `第 ${i + 1} 關`;
   ui.ladder.append(cell);
   return cell;
 });
@@ -56,6 +47,15 @@ const chamberCells = chambers.map((_, i) => {
   ui.cylinder.append(cell);
   return cell;
 });
+const bossCounters = [
+  { value: 'boss-hits-left', marks: 'boss-hits', limit: bossHealth, remaining: () => hitsLeft },
+  { value: 'boss-shots-left', marks: 'boss-shots', limit: bossShotLimit, remaining: () => shotsLeft },
+];
+for (const counter of bossCounters) {
+  counter.cells = Array.from({ length: counter.limit }, () => document.createElement('i'));
+  ui[counter.marks].append(...counter.cells);
+}
+text('intro-cap', multiplierText(maxBaseMultiplier));
 
 function canOfferAmmo(ammo) {
   return canBuy(ammo, mode) && (mode !== 'boss' || shotsLeft === bossShotLimit);
@@ -69,20 +69,27 @@ function render() {
   const spinning = mode === 'spinning';
   const looting = mode === 'loot';
   const transitioning = mode === 'transition';
-  const busy = spinning || looting || transitioning;
+  const opening = mode === 'entering';
+  const busy = spinning || looting || transitioning || opening;
   const playing = !ready && !finished;
   const atBoss = stage === finalStage;
   const selecting = mode === 'vault';
-  const inVault = playing && !atBoss && Boolean(selectedVault);
+  const choosing = selecting || opening || (transitioning && !atBoss && !selectedVault);
+  const fighting = playing && !choosing;
+  const inVault = fighting && !atBoss && Boolean(selectedVault);
   const target = inVault ? targets[stage - 1][selectedVault] : null;
   const needsReset = ready && balance < bets[0];
   const cost = price(bet);
   ui.game.dataset.mode = mode;
-  ui.arena.dataset.target = playing && atBoss ? 'boss' : target ?? '';
-  ui.enemy.hidden = atBoss;
-  ui['boss-enemy'].hidden = !atBoss;
+  ui.arena.dataset.scene = ready ? 'intro' : finished ? 'settlement' : choosing ? 'vault' : 'fight';
+  ui.arena.dataset.target = fighting && atBoss ? 'boss' : target ?? '';
+  ui.arena.dataset.vault = inVault ? selectedVault : '';
+  ui.enemy.hidden = !fighting || atBoss;
+  ui['boss-enemy'].hidden = !fighting || !atBoss;
+  ui.weapon.hidden = !fighting;
   ui.intro.hidden = !ready;
-  ui.vaults.hidden = !selecting;
+  ui.vaults.hidden = !choosing;
+  ui.vaults.dataset.opening = opening ? selectedVault : '';
   ui.decisions.hidden = !inVault || transitioning;
   ui.settlement.hidden = !finished;
   ui.loot.hidden = !looting;
@@ -91,8 +98,8 @@ function render() {
   ui.primary.disabled = busy || needsReset;
   ui.skip.disabled = busy;
   ui.fire.disabled = busy || ammo === 0;
-  ui.buy.hidden = !canOfferAmmo(ammo);
-  ui.buy.disabled = balance < cost;
+  ui.buy.hidden = !canOfferAmmo(ammo) && !(opening && canBuy(ammo, 'vault'));
+  ui.buy.disabled = busy || balance < cost;
   ui['open-menu'].disabled = busy;
   ui['reset-assets'].disabled = busy;
   ui['bet-down'].disabled = !ready || betIndex === 0;
@@ -105,23 +112,28 @@ function render() {
   const resetAmount = money(startingBalance);
   text('reset-note', busy ? '等待演出結束' : playing ? `結束本輪 · ${resetAmount}` : resetAmount);
   text('gate-number', String(stage).padStart(2, '0'));
-  ui['stage-status'].hidden = !playing || transitioning;
+  ui['stage-status'].hidden = !fighting || transitioning;
   ui['run-bonus'].hidden = !playing;
   text('run-multiplier', multiplierText(multiplier));
   text('jackpot-banner', `WIN UP TO ${multiplierText(maxBaseMultiplier * multiplier)}`);
   ui['chest-preview'].hidden = !target;
-  if (playing && !transitioning) {
+  ui['encounter-detail'].hidden = atBoss;
+  ui['boss-progress'].hidden = !atBoss;
+  if (choosing) {
+    for (const vault of ['coin', 'ammo']) {
+      const door = ui[`vault-${vault}`];
+      const tier = targets[stage - 1][vault];
+      door.disabled = !selecting;
+      door.dataset.tier = tier;
+      text(`vault-${vault}-tier`, chestTiers[tier].name);
+    }
+  } else if (fighting && !transitioning) {
     if (atBoss) {
       text('stage-plate', '封鎖區首領');
-      text('encounter-detail', `剩 ${hitsLeft} 次命中 · 剩 ${shotsLeft} 次開槍`);
-    } else if (selecting) {
-      text('stage-plate', `第 ${stage} 關`);
-      text('encounter-detail', '選一個庫進入');
-      for (const vault of ['coin', 'ammo']) {
-        const tier = targets[stage - 1][vault];
-        ui[`vault-${vault}`].dataset.tier = tier;
-        ui[`vault-${vault}-art`].src = chestArt(tier);
-        text(`vault-${vault}-tier`, `${chestTiers[tier].name}・${vault === 'coin' ? '倍率' : '補彈'}`);
+      for (const counter of bossCounters) {
+        const remaining = counter.remaining();
+        text(counter.value, remaining);
+        counter.cells.forEach((cell, index) => cell.classList.toggle('remaining', index < remaining));
       }
     } else if (target) {
       const chest = chestTiers[target];
@@ -150,13 +162,14 @@ function finish(prize = null) {
   balance += reward;
   mode = 'result';
   ui.game.dataset.outcome = cleared ? 'clear' : 'miss';
-  text('result-caption', cleared ? 'FINAL CHEST' : 'MISSION FAILED');
-  text('result-title', prize?.tier === 3 ? `${multiplierText(maxBaseMultiplier * multiplier)} 大獎` : cleared ? '最終寶箱' : '任務失敗');
+  text('result-title', prize?.tier === 3 ? `${multiplierText(maxBaseMultiplier * multiplier)} 大獎` : cleared ? '首領已擊倒' : '任務失敗');
+  ui['result-cache'].hidden = !cleared;
+  ui['result-amount'].hidden = !cleared;
   text('result-payout', signed(reward));
-  text('result-net', `本輪淨額 ${signed(reward - bet - spentOnAmmo)}`);
+  text('result-net', signed(reward - bet - spentOnAmmo));
   ui['result-breakdown'].hidden = !cleared || multiplier === 1;
   if (cleared) text('result-breakdown', `${money(prize.baseReward)} × ${multiplierText(multiplier).slice(0, -1)}`);
-  hint = !cleared ? '未能擊倒首領' : reward === bet + spentOnAmmo ? '已領回本輪投入' : '獎金已計入餘額';
+  hint = '';
   render();
   if (cleared) revolverAudio.play('clear');
 }
@@ -215,23 +228,23 @@ async function spinChest(kind, type, prizes, formatReward) {
   const weights = prizes.map(({ weight }) => weight);
   const selected = weightedIndex(weights);
   delete frame.dataset.spin;
-  frame.dataset.kind = kind;
+  ui.loot.dataset.kind = kind;
   face.style.transform = 'rotate(0deg)';
   face.style.setProperty('--upright', '0deg');
   const pockets = prizes.map(({ reward, tier }, i) => {
     const pocket = document.createElement('div');
     const angle = i * 2 * Math.PI / slots;
-    const jackpot = kind !== 'ammo' && tier === 3;
-    const count = kind === 'ammo' ? reward : jackpot ? 1 : tier + Number(kind === 'payout');
-    const icon = kind === 'ammo' ? 'assets/cartridge.png' : jackpot ? chestArt('gold') : 'assets/coin.png';
+    const count = kind === 'ammo' ? reward : 1;
+    const icon = kind === 'ammo' ? (reward ? 'assets/cartridge.png' : 'assets/reward-empty.webp')
+      : `assets/reward-${kind === 'coin' ? 'coin' : 'cash'}-${tier}.webp`;
     pocket.className = 'loot-pocket';
     pocket.dataset.count = String(count);
-    pocket.classList.toggle('jackpot', jackpot);
+    pocket.classList.toggle('jackpot', kind === 'payout' && tier === 3);
     pocket.setAttribute('role', 'img');
     pocket.setAttribute('aria-label', formatReward(reward));
     pocket.style.setProperty('--x', `${50 + 33 * Math.sin(angle)}%`);
     pocket.style.setProperty('--y', `${50 - 33 * Math.cos(angle)}%`);
-    for (let j = 0; j < count; j++) {
+    for (let j = 0; j < Math.max(1, count); j++) {
       const picture = document.createElement('img');
       picture.className = 'loot-icon';
       picture.src = icon;
@@ -241,7 +254,7 @@ async function spinChest(kind, type, prizes, formatReward) {
     return pocket;
   });
   face.replaceChildren(...pockets);
-  ui['loot-chest'].src = chestArt(type ?? 'gold');
+  ui['loot-chest'].src = type ? chestArt(type) : finalCache;
   text('loot-title', type ? `${chestTiers[type].name}・${kind === 'coin' ? '倍率獎勵' : '彈藥補給'}` : '最終寶箱');
   text('loot-result', '');
   mode = 'loot';
@@ -321,16 +334,24 @@ function start() {
   balance -= bet;
   targets = encounters();
   mode = 'vault';
-  hint = '先選金幣庫或軍械庫';
+  hint = '';
   render();
+  ui['vault-coin'].focus({ preventScroll: true });
 }
 
-function enterVault(vault) {
+async function enterVault(vault) {
   if (mode !== 'vault') return;
   selectedVault = vault;
+  revolverAudio.play('lock');
+  if (!reducedMotion.matches) {
+    mode = 'entering';
+    render();
+    await pause(320);
+  }
   mode = 'encounter';
-  hint = '選擇本關行動';
+  hint = '';
   render();
+  (ui.fire.disabled ? ui.skip : ui.fire).focus({ preventScroll: true });
 }
 
 async function advance(message) {
@@ -354,9 +375,12 @@ async function advance(message) {
   render();
   await pause(duration / 2);
   mode = enteringBoss ? 'boss' : 'vault';
-  if (enteringBoss && !countAmmo(chambers)) return finish();
+  if (enteringBoss) {
+    if (!countAmmo(chambers)) return finish();
+    hint = '';
+  }
   render();
-  if (enteringBoss) ui.primary.focus({ preventScroll: true });
+  (enteringBoss ? ui.primary : ui['vault-coin']).focus({ preventScroll: true });
 }
 
 function reload(amount) {
@@ -395,7 +419,7 @@ function resetRound() {
   spentOnAmmo = 0;
   chambers = initialCylinder();
   rotation = 0;
-  hint = readyHint;
+  hint = '';
   delete ui.game.dataset.outcome;
   render();
 }
@@ -425,7 +449,7 @@ ui.music.addEventListener('click', () => {
   text('music-state', enabled ? '開' : '關');
 });
 ui['reset-assets'].addEventListener('click', () => {
-  if (['spinning', 'loot', 'transition'].includes(mode)) return;
+  if (['spinning', 'loot', 'transition', 'entering'].includes(mode)) return;
   balance = startingBalance;
   ui.menu.close();
   resetRound();

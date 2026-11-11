@@ -6,10 +6,12 @@
   <meta name="theme-color" content="#15100d">
   <meta name="description" content="選金幣庫累積倍率，選軍械庫補彈，挑戰第六關首領。">
   <title>REVOLVER · 封鎖區</title>
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
+  <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
+  <link rel="stylesheet" href="style.css?v=13">
   <script defer src="rules.js?v=12"></script>
   <script defer src="audio.js?v=4"></script>
-  <script defer src="game.js?v=12"></script>
+  <script defer src="game.js?v=13"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -35,13 +37,21 @@
       </div>
     </header>
 
-    <div class="arena" id="arena">
+    <div class="arena" id="arena" data-scene="intro">
       <div class="gate-number" id="gate-number" aria-hidden="true">01</div>
       <div class="stage-status" id="stage-status" hidden>
         <div class="stage-plate"><img id="chest-preview" alt="" hidden><span id="stage-plate"></span></div>
         <p class="encounter-detail" id="encounter-detail"></p>
+        <div class="boss-progress" id="boss-progress" role="group" aria-label="首領戰進度" hidden>
+          <div class="boss-counter boss-counter-hits">
+            <span>還需命中</span><strong id="boss-hits-left">2</strong><span class="boss-marks" id="boss-hits" aria-hidden="true"></span>
+          </div>
+          <div class="boss-counter boss-counter-shots">
+            <span>剩餘開槍</span><strong id="boss-shots-left">3</strong><span class="boss-marks" id="boss-shots" aria-hidden="true"></span>
+          </div>
+        </div>
       </div>
-      <img class="enemy" id="enemy" src="assets/zombie.png" alt="">
+      <img class="enemy" id="enemy" src="assets/zombie.png" alt="" hidden>
       <img class="enemy boss-enemy" id="boss-enemy" src="assets/boss.png" alt="" hidden>
       <img class="shooter" src="assets/gunslinger.png" alt="">
       <div class="muzzle" id="muzzle" aria-hidden="true"></div>
@@ -49,38 +59,43 @@
       <div class="tracer" id="tracer" aria-hidden="true"></div>
       <div class="vignette" aria-hidden="true"></div>
 
-      <div class="intro" id="intro">
-        <div class="title-mark" aria-hidden="true">✦</div>
-        <h1>REVOLVER</h1>
-        <p>封 鎖 區</p>
-      </div>
+      <section class="intro" id="intro" aria-labelledby="intro-title">
+        <h1 id="intro-title">REVOLVER <span>封鎖區</span></h1>
+        <div class="intro-prize"><span>WIN UP TO</span><strong id="intro-cap">10×</strong></div>
+        <img class="intro-cache" src="assets/final-cache.webp" width="690" height="460" fetchpriority="high" alt="">
+        <p>擊倒首領，開啟最終寶箱</p>
+      </section>
+
+      <section class="vaults" id="vaults" aria-labelledby="vault-title" hidden>
+        <h2 id="vault-title">選擇寶庫</h2>
+        <div class="vault-doors">
+          <button class="vault-door vault-coin" id="vault-coin" type="button">
+            <span class="vault-door-art" aria-hidden="true"></span>
+            <span class="vault-label"><strong>金幣庫</strong><span>累積倍率</span><small id="vault-coin-tier"></small></span>
+          </button>
+          <button class="vault-door vault-ammo" id="vault-ammo" type="button">
+            <span class="vault-door-art" aria-hidden="true"></span>
+            <span class="vault-label"><strong>軍械庫</strong><span>補充彈藥</span><small id="vault-ammo-tier"></small></span>
+          </button>
+        </div>
+      </section>
 
       <section class="settlement" id="settlement" aria-labelledby="result-title" hidden>
-        <p class="result-caption" id="result-caption"></p>
+        <img class="result-cache" id="result-cache" src="assets/final-cache.webp" width="690" height="460" alt="" hidden>
         <h2 id="result-title"></h2>
-        <strong id="result-payout"></strong>
+        <p class="result-amount" id="result-amount"><span>實領獎金</span><strong id="result-payout"></strong></p>
         <p class="result-breakdown" id="result-breakdown" hidden></p>
-        <p id="result-net"></p>
+        <p class="result-net"><span>本輪淨額</span><strong id="result-net"></strong></p>
       </section>
 
       <div class="console">
-        <div class="weapon" id="weapon" aria-hidden="true">
+        <div class="weapon" id="weapon" aria-hidden="true" hidden>
           <span class="pointer"></span>
           <div class="cylinder" id="cylinder"></div>
         </div>
         <div class="ammo-controls">
           <p class="ammo-readout">彈藥 <strong id="ammo">3 / 6</strong></p>
           <button class="buy-ammo" id="buy" type="button" hidden>加購 1 發 <small id="buy-cost"></small></button>
-        </div>
-        <div class="decisions" id="vaults" role="group" aria-label="選擇寶庫" hidden>
-          <button class="choice vault-choice vault-coin" id="vault-coin" type="button">
-            <img id="vault-coin-art" width="48" height="37" alt="">
-            <span><strong>金幣庫</strong><small id="vault-coin-tier"></small></span>
-          </button>
-          <button class="choice vault-choice vault-ammo" id="vault-ammo" type="button">
-            <img id="vault-ammo-art" width="48" height="37" alt="">
-            <span><strong>軍械庫</strong><small id="vault-ammo-tier"></small></span>
-          </button>
         </div>
         <div class="decisions" id="decisions" role="group" aria-label="本關行動" hidden>
           <button class="choice" id="skip" type="button">
@@ -93,7 +108,7 @@
         <button class="primary" id="primary" type="button">
           <img src="assets/cartridge.png" width="40" height="40" alt=""><span id="primary-text">開始遊戲</span>
         </button>
-        <p class="hint" id="hint" role="status">補彈或累積倍率，挑戰第六關首領</p>
+        <p class="hint" id="hint" role="status"></p>
       </div>
       <section class="loot-overlay" id="loot" aria-labelledby="loot-title" hidden>
         <div class="loot-panel">
