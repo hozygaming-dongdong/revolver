@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#15100d">
-  <meta name="description" content="六格左輪、五道封鎖。射擊、補彈，或帶著獎金撤離。">
+  <meta name="description" content="管理六格左輪的彈藥，打倒第五關首領，開啟最終寶箱。">
   <title>REVOLVER · 封鎖區</title>
-  <link rel="stylesheet" href="style.css?v=3">
-  <script defer src="rules.js?v=3"></script>
-  <script defer src="audio.js"></script>
-  <script defer src="game.js?v=3"></script>
+  <link rel="stylesheet" href="style.css?v=4">
+  <script defer src="rules.js?v=4"></script>
+  <script defer src="audio.js?v=4"></script>
+  <script defer src="game.js?v=4"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -28,12 +28,16 @@
           <span aria-hidden="true"></span>
         </button>
       </div>
-      <ol class="ladder" id="ladder" aria-label="五關賠付倍率"></ol>
+      <ol class="ladder" id="ladder" aria-label="關卡進度"></ol>
     </header>
 
     <div class="arena" id="arena">
-      <div class="gate-number" id="gate-number" aria-hidden="true">02</div>
-      <div class="stage-plate" id="stage-plate" aria-live="polite">第 1 關 <span>/</span> 5</div>
+      <div class="gate-number" id="gate-number" aria-hidden="true">01</div>
+      <div class="stage-status" id="stage-status" hidden>
+        <div class="stage-plate" id="stage-plate"></div>
+        <p class="encounter-detail" id="encounter-detail"></p>
+        <p class="jackpot-banner" id="jackpot-banner" hidden>WIN UP TO 10×</p>
+      </div>
       <img class="enemy" src="assets/zombie.png" alt="">
       <img class="shooter" src="assets/gunslinger.png" alt="">
       <div class="muzzle" id="muzzle" aria-hidden="true"></div>
@@ -47,30 +51,6 @@
         <p>封 鎖 區</p>
       </div>
 
-      <section class="decisions" id="decisions" aria-label="過關後的選擇" hidden>
-        <button class="choice" id="cash">
-          <span class="choice-label">目前賠付</span><strong id="cash-multiple"></strong>
-          <span class="choice-next">結束本輪</span>
-          <img src="assets/coin.png" alt="">
-          <span class="choice-name">CASH OUT<small>領取</small></span>
-          <span class="choice-cost" id="cash-amount"></span>
-        </button>
-        <button class="choice" id="continue">
-          <span class="choice-label">命中機率</span><strong id="keep-odds"></strong>
-          <span class="choice-next" id="keep-next"></span>
-          <span class="mini-cylinder" aria-hidden="true"></span>
-          <span class="choice-name">CONTINUE<small>繼續</small></span>
-          <span class="choice-cost" id="keep-cost">免費</span>
-        </button>
-        <button class="choice" id="buy">
-          <span class="choice-label">命中機率</span><strong id="buy-odds"></strong>
-          <span class="choice-next" id="buy-next"></span>
-          <img src="assets/cartridge.png" alt="">
-          <span class="choice-name">BUY AMMO<small id="buy-label">補一發</small></span>
-          <span class="choice-cost" id="buy-cost"></span>
-        </button>
-      </section>
-
       <section class="settlement" id="settlement" aria-labelledby="result-title" hidden>
         <p class="result-caption" id="result-caption"></p>
         <h2 id="result-title"></h2>
@@ -83,11 +63,22 @@
           <span class="pointer"></span>
           <div class="cylinder" id="cylinder"></div>
         </div>
-        <p class="ammo-readout">彈藥 <strong id="ammo">5 / 6</strong></p>
+        <p class="ammo-readout">彈藥 <strong id="ammo">3 / 6</strong><span id="ammo-extra" hidden></span></p>
+        <div class="decisions" id="decisions" role="group" aria-label="本關行動" hidden>
+          <button class="choice" id="skip" type="button">
+            <strong>繞過</strong><small>保留彈藥</small>
+          </button>
+          <button class="choice choice-fire" id="fire" type="button">
+            <strong>開槍</strong><small id="fire-odds"></small>
+          </button>
+          <button class="choice" id="buy" type="button">
+            <strong>加購 1 發</strong><small id="buy-cost"></small>
+          </button>
+        </div>
         <button class="primary" id="primary" type="button">
           <img src="assets/cartridge.png" width="40" height="40" alt=""><span id="primary-text">開始遊戲</span>
         </button>
-        <p class="hint" id="hint" role="status">按下開始遊戲，進入封鎖區</p>
+        <p class="hint" id="hint" role="status">保留彈藥，打倒第五關首領</p>
       </div>
     </div>
   </main>
@@ -111,9 +102,9 @@
 
   <dialog id="rules" aria-labelledby="rules-title">
     <h2 id="rules-title">遊戲說明</h2>
-    <p>每輪以五顆子彈起手。按下 FIRE 後，彈巢會從六格中均勻抽出一格。抽到子彈就擊倒殭屍並消耗一發，抽到空槽則失去本輪未領獎金。</p>
-    <p>擊倒殭屍後，可以收手領取當前賠付，或繼續挑戰。每關可付費補一發再射擊，補彈上限為五顆。第五關命中會自動結算。</p>
-    <p>賠付含本金。補彈費依關卡、剩餘彈數和本輪押注計算，金額顯示在選項上。押注及補彈費從餘額扣除，出局時不退回。</p>
+    <p>每輪從 3 發起手，最多可裝 4 發。每次開槍都從六格均勻抽一格，抽到子彈才消耗該發。</p>
+    <p>前四關各選一次：繞過、開槍，或付押注的 20% 補一發並繞過。打倒不同殭屍可獲得 2 發普通彈、寶箱 1.5× 加成，或裝入一發金彈。打空仍進下一關。</p>
+    <p>第五關最多開四槍。普通彈需命中兩次，抽中金彈可一槍擊殺。打倒首領會自動開箱，至少拿回押注和實付補彈費，最高為原押注的 10×。失敗時本局投入不退回。</p>
     <form method="dialog"><button class="primary">返回遊戲</button></form>
   </dialog>
 </body>

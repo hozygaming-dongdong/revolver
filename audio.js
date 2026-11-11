@@ -6,7 +6,6 @@ const revolverAudio = (() => {
     fire: [['noise', 900, .235, .68], ['sine', 144, .18, .45, 45]],
     empty: [['noise', 2150, .04, .32], ['triangle', 1020, .048, .16, 680]],
     reload: [['noise', 1750, .068, .24], ['triangle', 710, .09, .17, 490], ['sine', 2060, .085, .09, 1720, .028]],
-    cash: [['triangle', 1568, .16, .2], ['sine', 2860, .1, .1], ['triangle', 2093, .19, .15, 1930, .052]],
     clear: [['triangle', 392, .21, .23], ['triangle', 523.25, .23, .23, null, .15], ['triangle', 659.25, .39, .27, null, .30]],
   };
   const effectsLevel = .72;

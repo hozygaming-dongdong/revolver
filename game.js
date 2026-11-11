@@ -1,6 +1,6 @@
 const {
-  slots, multiplierScale, multipliers, finalStage, ammoLimit, initialCylinder, countAmmo, canBuy, loadAmmo,
-  chamberIndex, shoot, payout, price,
+  slots, finalStage, ammoLimit, bossShotLimit, bossHealth, initialCylinder, countAmmo, canBuy, loadAmmo,
+  chamberIndex, shoot, price, encounters, openChest,
 } = revolverRules;
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
@@ -9,25 +9,33 @@ const money = cents => '$' + (cents / 100).toLocaleString('zh-TW', {
   minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2,
 });
 const signed = value => `${value >= 0 ? '+' : '−'}${money(Math.abs(value))}`;
-const multiple = stage => `${(multipliers[stage] / multiplierScale).toFixed(3)}×`;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const wait = ms => new Promise(resolve => setTimeout(resolve, reducedMotion.matches ? Math.min(ms, 140) : ms));
 const bets = [10_000, 20_000, 50_000, 100_000];
 const startingBalance = 1_000_000;
-const readyHint = '按下開始遊戲，進入封鎖區';
+const readyHint = '保留彈藥，打倒第五關首領';
+const enemyInfo = {
+  supply: ['補給殭屍', '擊倒掉落 2 發普通彈'],
+  reward: ['獎勵殭屍', '擊倒獲得寶箱 1.5× 加成'],
+  gold: ['金彈殭屍', '擊倒掉落 1 發金彈'],
+};
 
 let mode = 'ready';
 let balance = startingBalance;
 let betIndex = 0;
-let cleared = 0;
+let stage = 1;
+let targets = [];
+let shotsLeft = bossShotLimit;
+let hitsLeft = bossHealth;
+let boosted = false;
 let spentOnAmmo = 0;
 let chambers = initialCylinder();
 let rotation = 0;
 let hint = readyHint;
 
-const stageCells = multipliers.slice(1).map((_, i) => {
+const stageCells = Array.from({ length: finalStage }, (_, i) => {
   const cell = document.createElement('li');
-  cell.innerHTML = `<span>第 ${i + 1} 關</span><b>${multiple(i + 1)}</b>`;
+  cell.textContent = i + 1 === finalStage ? '首領' : `第 ${i + 1} 關`;
   ui.ladder.append(cell);
   return cell;
 });
@@ -41,18 +49,25 @@ const chamberCells = chambers.map((_, i) => {
 function render() {
   const bet = bets[betIndex];
   const ammo = countAmmo(chambers);
-  const deciding = mode === 'decision';
   const ready = mode === 'ready';
   const finished = mode === 'result';
   const spinning = mode === 'spinning';
+  const playing = !ready && !finished;
+  const atBoss = stage === finalStage;
+  const choosing = playing && !atBoss;
   const needsReset = ready && balance < bets[0];
-  const activeStage = Math.min(finalStage, cleared + 1);
+  const goldLoaded = chambers.includes('gold');
+  const cost = price(bet);
   ui.game.dataset.mode = mode;
+  ui.arena.dataset.target = playing ? (atBoss ? 'boss' : targets[stage - 1]) : '';
   ui.intro.hidden = !ready;
-  ui.decisions.hidden = !deciding;
+  ui.decisions.hidden = !choosing;
   ui.settlement.hidden = !finished;
-  ui.primary.hidden = deciding;
+  ui.primary.hidden = choosing;
   ui.primary.disabled = spinning || needsReset;
+  ui.skip.disabled = spinning;
+  ui.fire.disabled = spinning || ammo === 0;
+  ui.buy.disabled = spinning || !canBuy(ammo, balance, cost);
   ui['reset-assets'].disabled = spinning;
   ui['bet-down'].disabled = !ready || betIndex === 0;
   ui['bet-up'].disabled = !ready || betIndex === bets.length - 1;
@@ -60,49 +75,50 @@ function render() {
   text('balance', money(balance));
   text('bet', money(bet));
   text('ammo', `${ammo} / ${slots}`);
+  ui['ammo-extra'].hidden = !goldLoaded && !boosted;
+  text('ammo-extra', [goldLoaded ? '含 1 發金彈' : '', boosted ? '寶箱 1.5×' : ''].filter(Boolean).join(' · '));
   text('hint', needsReset ? '餘額不足，請從選單重設資產' : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足` : hint);
   const resetAmount = money(startingBalance);
-  text('reset-note', spinning ? '等待射擊結束' : mode === 'aim' || deciding ? `結束本輪 · ${resetAmount}` : resetAmount);
-  text('gate-number', String(Math.min(finalStage, activeStage + (deciding ? 0 : 1))).padStart(2, '0'));
-  ui['stage-plate'].hidden = ready || finished;
-  text('stage-plate', deciding ? `第 ${cleared} 關完成 → 第 ${activeStage} 關` : `第 ${activeStage} 關 / ${finalStage}`);
-  chamberCells.forEach((cell, i) => cell.classList.toggle('loaded', chambers[i]));
+  text('reset-note', spinning ? '等待射擊結束' : playing ? `結束本輪 · ${resetAmount}` : resetAmount);
+  text('gate-number', String(stage).padStart(2, '0'));
+  ui['stage-status'].hidden = !playing;
+  ui['jackpot-banner'].hidden = !atBoss || (!goldLoaded && (ammo < hitsLeft || shotsLeft < hitsLeft));
+  if (playing) {
+    const [name, detail] = atBoss
+      ? ['封鎖區首領', `剩 ${hitsLeft} 次命中 · 剩 ${shotsLeft} 次開槍`]
+      : enemyInfo[targets[stage - 1]];
+    text('stage-plate', name);
+    text('encounter-detail', detail);
+  }
+  chamberCells.forEach((cell, i) => {
+    cell.classList.toggle('loaded', Boolean(chambers[i]));
+    cell.classList.toggle('gold', chambers[i] === 'gold');
+  });
   ui.cylinder.style.transform = `rotate(${rotation}deg)`;
   stageCells.forEach((cell, i) => {
-    cell.classList.toggle('cleared', i < cleared);
-    cell.classList.toggle('current', i + 1 === activeStage && i >= cleared && !finished);
-    if (i + 1 === activeStage && !finished) cell.setAttribute('aria-current', 'step');
+    cell.classList.toggle('cleared', i + 1 < stage || ui.game.dataset.outcome === 'clear');
+    cell.classList.toggle('current', i + 1 === stage && !finished);
+    if (i + 1 === stage && !finished) cell.setAttribute('aria-current', 'step');
     else cell.removeAttribute('aria-current');
   });
-  if (deciding) {
-    const cost = price(bet, cleared, ammo);
-    text('cash-multiple', multiple(cleared));
-    text('cash-amount', signed(payout(bet, cleared)));
-    text('keep-odds', `${ammo}/${slots}`);
-    text('keep-next', `下一關 ${multiple(activeStage)}`);
-    text('buy-next', `下一關 ${multiple(activeStage)}`);
-    text('buy-odds', `${Math.min(ammoLimit, ammo + 1)}/${slots}`);
-    ui.continue.disabled = ammo === 0;
-    text('keep-cost', ammo ? '免費' : '彈藥耗盡');
-    ui.buy.disabled = !canBuy(ammo, balance, cost);
-    text('buy-label', ammo >= ammoLimit ? '已達上限' : balance < cost ? '餘額不足' : '補一發');
-    text('buy-cost', signed(-cost));
-  }
+  text('fire-odds', ammo ? `命中 ${ammo}/${slots}` : '無彈藥');
+  text('buy-cost', ammo >= ammoLimit ? '彈藥已滿' : balance < cost ? '餘額不足' : signed(-cost));
 }
 
-function finish(reason) {
+function finish(cleared) {
   const bet = bets[betIndex];
-  const reward = reason === 'miss' ? 0 : payout(bet, cleared);
+  const chest = cleared ? openChest(bet, spentOnAmmo, boosted) : null;
+  const reward = chest?.reward ?? 0;
   balance += reward;
   mode = 'result';
-  ui.game.dataset.outcome = reason;
-  text('result-caption', reason === 'miss' ? 'EMPTY CHAMBER' : reason === 'clear' ? 'ALL STAGES CLEARED' : 'CASH OUT');
-  text('result-title', reason === 'miss' ? '任務失敗' : reason === 'clear' ? '突破封鎖' : '撤離成功');
+  ui.game.dataset.outcome = cleared ? 'clear' : 'miss';
+  text('result-caption', cleared ? 'FINAL CHEST' : 'MISSION FAILED');
+  text('result-title', chest?.jackpot ? '10× 大獎' : cleared ? '最終寶箱' : '任務失敗');
   text('result-payout', signed(reward));
   text('result-net', `本輪淨額 ${signed(reward - bet - spentOnAmmo)}`);
-  hint = reason === 'miss' ? '抽中空槽，未領獎金歸零' : '獎金已計入餘額';
+  hint = !cleared ? '未能擊倒首領' : chest.floorApplied ? '已按本輪投入補足回本保底' : '獎金已計入餘額';
   render();
-  if (reason !== 'miss') revolverAudio.play(reason);
+  if (cleared) revolverAudio.play('clear');
 }
 
 function animateShot() {
@@ -127,11 +143,14 @@ function animateShot() {
 }
 
 async function fire() {
-  if (mode !== 'aim') return;
+  if (!['encounter', 'boss'].includes(mode) || !countAmmo(chambers)) return;
+  const atBoss = mode === 'boss';
   revolverAudio.unlock();
   mode = 'spinning';
   const selected = chamberIndex();
   const outcome = shoot(chambers, selected);
+  const gold = outcome.round === 'gold';
+  const lethal = outcome.round && (!atBoss || gold || hitsLeft === 1);
   const startRotation = rotation;
   const turn = (360 - selected * 60 - rotation % 360 + 360) % 360;
   rotation += turn + 1080;
@@ -160,22 +179,33 @@ async function fire() {
   chamberCells[selected].classList.add('selected');
   revolverAudio.play('lock');
   await wait(85);
-  if (outcome.hit) animateShot();
-  ui.arena.dataset.shot = outcome.hit ? 'hit' : 'miss';
-  revolverAudio.play(outcome.hit ? 'fire' : 'empty');
-  hint = outcome.hit ? '命中 · 目標擊倒' : '空槽 · 槍手遭到襲擊';
+  if (outcome.round) animateShot();
+  ui.arena.dataset.shot = gold ? 'gold' : lethal ? 'kill' : outcome.round ? 'hit' : 'miss';
+  revolverAudio.play(outcome.round ? 'fire' : 'empty');
+  hint = gold ? '金彈命中 · 一槍擊殺' : lethal ? '命中 · 目標擊倒' : outcome.round ? '命中首領' : '空槍 · 彈藥保留';
   render();
   await wait(620);
   chambers = outcome.chambers;
   chamberCells[selected].classList.remove('selected');
   delete ui.weapon.dataset.spin;
   delete ui.arena.dataset.shot;
-  if (!outcome.hit) return finish('miss');
-  cleared++;
-  if (cleared === finalStage) return finish('clear');
-  mode = 'decision';
-  hint = '領取獎金，或挑戰下一關';
-  render();
+  if (atBoss) {
+    shotsLeft--;
+    if (outcome.round) hitsLeft--;
+    if (lethal) return finish(true);
+    if (!shotsLeft || !countAmmo(chambers)) return finish(false);
+    mode = 'boss';
+    render();
+    return;
+  }
+  if (!outcome.round) return advance(hint);
+  const target = targets[stage - 1];
+  if (target === 'reward') {
+    boosted = true;
+    return advance('擊倒殭屍 · 取得寶箱 1.5× 加成');
+  }
+  const loaded = reload(target === 'supply' ? 2 : 1, target === 'gold' ? 'gold' : 'normal');
+  advance(target === 'gold' ? '擊倒殭屍 · 金彈已裝入' : `擊倒殭屍 · 裝入 ${loaded} 發普通彈`);
 }
 
 function start() {
@@ -188,41 +218,53 @@ function start() {
   }
   revolverAudio.startMusic();
   balance -= bet;
-  mode = 'aim';
-  hint = '按下 FIRE 抽取一格彈槽';
+  targets = encounters();
+  mode = 'encounter';
+  hint = '選擇本關行動';
   render();
 }
 
-function advance(buy) {
-  if (mode !== 'decision') return;
-  const bet = bets[betIndex];
-  const ammo = countAmmo(chambers);
-  let reloadedSlot;
-  if (buy) {
-    const cost = price(bet, cleared, ammo);
-    if (!canBuy(ammo, balance, cost)) return;
-    balance -= cost;
-    spentOnAmmo += cost;
-    const loaded = loadAmmo(chambers);
-    reloadedSlot = chamberCells[loaded.findIndex((hasRound, slot) => hasRound && !chambers[slot])];
-    chambers = loaded;
-  } else if (!ammo) return;
-  mode = 'aim';
-  hint = buy ? '補彈完成 · 按下 FIRE' : '按下 FIRE 挑戰下一關';
+function advance(message) {
+  stage++;
+  mode = stage === finalStage ? 'boss' : 'encounter';
+  hint = message;
+  if (mode === 'boss' && !countAmmo(chambers)) return finish(false);
   render();
-  if (reloadedSlot) {
-    reloadedSlot.animate([
+  if (mode === 'boss') ui.primary.focus();
+}
+
+function reload(amount, round) {
+  const loaded = loadAmmo(chambers, amount, round);
+  let added = 0;
+  loaded.forEach((value, i) => {
+    if (!value || chambers[i]) return;
+    added++;
+    chamberCells[i].animate([
       { filter: 'brightness(1.8) drop-shadow(0 0 8px #ffb750)' },
       { filter: 'none' },
     ], { duration: reducedMotion.matches ? 140 : 300, easing: 'ease-out' });
-    revolverAudio.play('reload');
-  }
-  ui.primary.focus();
+  });
+  chambers = loaded;
+  if (added) revolverAudio.play('reload');
+  return added;
+}
+
+function buyAmmo() {
+  if (mode !== 'encounter') return;
+  const cost = price(bets[betIndex]);
+  if (!canBuy(countAmmo(chambers), balance, cost)) return;
+  balance -= cost;
+  spentOnAmmo += cost;
+  reload(1);
+  advance(`補彈完成 · 已扣 ${money(cost)}`);
 }
 
 function resetRound() {
   mode = 'ready';
-  cleared = 0;
+  stage = 1;
+  shotsLeft = bossShotLimit;
+  hitsLeft = bossHealth;
+  boosted = false;
   spentOnAmmo = 0;
   chambers = initialCylinder();
   rotation = 0;
@@ -233,15 +275,15 @@ function resetRound() {
 
 ui.primary.addEventListener('click', () => {
   if (mode === 'ready') start();
-  else if (mode === 'aim') fire();
+  else if (mode === 'boss') fire();
   else if (mode === 'result') resetRound();
 });
 for (const [id, step] of [['bet-down', -1], ['bet-up', 1]]) {
   ui[id].addEventListener('click', () => { betIndex += step; render(); });
 }
-ui.cash.addEventListener('click', () => { if (mode === 'decision') finish('cash'); });
-ui.continue.addEventListener('click', () => advance(false));
-ui.buy.addEventListener('click', () => advance(true));
+ui.skip.addEventListener('click', () => { if (mode === 'encounter') advance('已繞過 · 彈藥保留'); });
+ui.fire.addEventListener('click', fire);
+ui.buy.addEventListener('click', buyAmmo);
 ui['open-menu'].addEventListener('click', () => ui.menu.showModal());
 ui.sound.addEventListener('click', () => {
   const muted = revolverAudio.toggleMute();

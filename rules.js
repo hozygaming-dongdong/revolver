@@ -1,45 +1,52 @@
 const revolverRules = (() => {
   const slots = 6;
-  const startAmmo = 5;
-  const ammoLimit = 5;
+  const startAmmo = 3;
+  const ammoLimit = 4;
   const finalStage = 5;
-  const multiplierScale = 1000;
-  const targetRtp = 970;
+  const bossShotLimit = 4;
+  const bossHealth = 2;
+  const chestTiers = [[860_351, 1], [80_000, 1.5], [59_549, 3], [100, 10]];
 
-  function winningSequences(ammo, shots) {
-    let ways = 1;
-    for (let shot = 0; shot < shots; shot++) ways *= Math.max(0, ammo - shot);
-    return ways;
-  }
-
-  const multipliers = [0, ...Array.from({ length: finalStage }, (_, i) =>
-    targetRtp * slots ** (i + 1) / winningSequences(startAmmo, i + 1))];
-  const payout = (bet, stage) => bet * multipliers[stage] / multiplierScale;
-  const naturalFinishWays = winningSequences(startAmmo, finalStage);
-
-  function price(bet, cleared, ammo) {
-    const remaining = finalStage - cleared;
-    const extraWays = winningSequences(ammo + 1, remaining) - winningSequences(ammo, remaining);
-    // Fee = bet × added conditional finish probability ÷ natural full-round finish probability.
-    return bet * extraWays * slots ** cleared / naturalFinishWays;
-  }
-
-  const initialCylinder = () => Array.from({ length: slots }, (_, slot) => slot < startAmmo);
+  const initialCylinder = () => Array.from({ length: slots }, (_, i) => i < startAmmo ? 'normal' : null);
   const countAmmo = chambers => chambers.filter(Boolean).length;
+  const price = bet => bet / 5;
   const canBuy = (ammo, balance, cost) => ammo < ammoLimit && balance >= cost;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
 
-  function loadAmmo(chambers) {
-    const empty = chambers.indexOf(false);
-    return countAmmo(chambers) >= ammoLimit ? chambers : chambers.map((loaded, i) => loaded || i === empty);
+  function loadAmmo(chambers, amount = 1, round = 'normal') {
+    const next = [...chambers];
+    let remaining = Math.min(amount, ammoLimit - countAmmo(chambers));
+    for (let i = 0; i < slots && remaining > 0; i++) {
+      if (next[i]) continue;
+      next[i] = round;
+      remaining--;
+    }
+    return next;
   }
 
   function shoot(chambers, selected) {
-    const hit = chambers[selected];
-    return { hit, chambers: hit ? chambers.map((loaded, i) => i === selected ? false : loaded) : chambers };
+    const round = chambers[selected];
+    return { round, chambers: round ? chambers.map((value, i) => i === selected ? null : value) : chambers };
   }
 
-  return { slots, startAmmo, ammoLimit, multiplierScale, multipliers, finalStage, payout, price, initialCylinder, countAmmo, canBuy, chamberIndex, loadAmmo, shoot };
+  function encounters(random = Math.random) {
+    const rewardStage = chamberIndex(random);
+    const firstThree = [0, 1, 2].map(i => i === rewardStage ? 'reward' : 'supply');
+    return [...firstThree, random() < .25 ? 'gold' : 'supply'];
+  }
+
+  function openChest(bet, spentOnAmmo, boosted, random = Math.random) {
+    let roll = Math.floor(random() * 1_000_000);
+    const [, multiplier] = chestTiers.find(([weight]) => (roll -= weight) < 0);
+    const prize = Math.min(bet * 10, bet * multiplier * (boosted ? 1.5 : 1));
+    const floor = bet + spentOnAmmo;
+    return { reward: Math.max(prize, floor), floorApplied: floor > prize, jackpot: multiplier === 10 };
+  }
+
+  return {
+    slots, startAmmo, ammoLimit, finalStage, bossShotLimit, bossHealth, chestTiers,
+    initialCylinder, countAmmo, price, canBuy, chamberIndex, loadAmmo, shoot, encounters, openChest,
+  };
 })();
 
 if (typeof module !== 'undefined') module.exports = revolverRules;
