@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=22">
   <script defer src="rules.js?v=20"></script>
   <script defer src="audio.js?v=20"></script>
-  <script defer src="game.js?v=21"></script>
+  <script defer src="game.js?v=22"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -170,6 +170,31 @@
           <p id="transition-boss" hidden></p>
         </div>
       </div>
+      <section class="boss-reveal" id="boss-reveal" aria-labelledby="boss-reveal-name" aria-describedby="boss-reveal-rule" hidden>
+        <div class="boss-reveal-art" aria-hidden="true">
+          <div class="boss-reveal-figure reveal-single">
+            <span class="boss-health"><i class="remaining"></i><i class="remaining"></i><i class="remaining"></i></span>
+            <img src="assets/boss.png" alt="">
+          </div>
+          <div class="boss-reveal-figure reveal-twin reveal-runner">
+            <span class="boss-health"><i class="remaining"></i></span>
+            <img src="assets/boss-runner.webp" alt="">
+          </div>
+          <div class="boss-reveal-figure reveal-twin">
+            <span class="boss-health"><i class="remaining"></i><i class="remaining"></i></span>
+            <img src="assets/boss-armored.webp" alt="">
+          </div>
+          <div class="boss-reveal-barrel"><img id="reveal-barrel" alt=""></div>
+        </div>
+        <div class="boss-reveal-caption">
+          <h2 id="boss-reveal-name"></h2>
+          <p id="boss-reveal-rule"></p>
+        </div>
+        <button class="boss-reveal-continue" id="boss-reveal-continue" type="button"
+          aria-describedby="boss-reveal-name boss-reveal-rule">
+          <span>點一下進入第一關</span>
+        </button>
+      </section>
     </div>
   </main>
 

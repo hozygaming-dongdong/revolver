@@ -23,6 +23,11 @@ const cashIcons = [0, 0, 1, 2, 2, 3];
 const multiplierText = multiplier => `${multiplier.toLocaleString('zh-TW', { maximumFractionDigits: 5 })}×`;
 const ammoText = ammo => ammo ? `${ammo} 發` : '空箱';
 const vaultNames = { coin: '金幣庫', ammo: '軍械庫' };
+const bossIntros = {
+  single: ['單首領', '四槍內命中三次'],
+  twins: ['雙首領', '點角色開槍，命中可擊退'],
+  oil: ['油桶首領', '射油桶時，實彈有 50% 機率引爆'],
+};
 
 let mode = 'ready';
 let balance = startingBalance;
@@ -40,6 +45,7 @@ let spentOnAmmo = 0;
 let chambers = initialCylinder();
 let rotation = 0;
 let hint = '';
+let bossRevealTimer;
 
 const stageCells = Array.from({ length: finalStage }, (_, i) => {
   const cell = document.createElement('li');
@@ -48,6 +54,10 @@ const stageCells = Array.from({ length: finalStage }, (_, i) => {
   return cell;
 });
 const bossStageLabel = stageCells[finalStage - 1].firstChild;
+const bossStageThumb = document.createElement('span');
+bossStageThumb.className = 'boss-stage-thumb';
+bossStageThumb.setAttribute('aria-hidden', 'true');
+bossStageLabel.before(bossStageThumb);
 const twinTargets = [...ui['twin-bosses'].querySelectorAll('button')];
 const twinArt = twinTargets.map(button => button.querySelector('img'));
 const chamberCells = chambers.map((_, i) => {
@@ -63,6 +73,7 @@ healthBar.setAttribute('aria-valuemax', bossHealth);
 text('intro-cap', multiplierText(maxBaseMultiplier));
 if (mixedBossTrial) {
   ui['barrel-prop'].src = 'assets/barrel-cover.webp';
+  ui['reveal-barrel'].src = ui['barrel-prop'].src;
   ui['barrel-rules'].hidden = false;
   text('boss-draw-rules', '開局抽出單首領（48%）、雙首領（32%）或油桶首領（20%）。首領戰最多開 4 槍，入場至少要有 3 發彈藥。');
 }
@@ -106,6 +117,7 @@ function render() {
   const bet = bets[betIndex];
   const ammo = countAmmo(chambers);
   const ready = mode === 'ready';
+  const revealing = mode === 'boss-reveal';
   const finished = mode === 'result';
   const spinning = mode === 'spinning';
   const looting = mode === 'loot';
@@ -114,15 +126,16 @@ function render() {
   const attacking = mode === 'boss-attack';
   const bossSupply = mode === 'boss-supply';
   const bossReload = mode === 'boss-reload';
-  const busy = spinning || looting || transitioning || opening || attacking || bossReload;
+  const busy = revealing || spinning || looting || transitioning || opening || attacking || bossReload;
   const playing = !ready && !finished;
   const atBoss = stage === finalStage;
   const selecting = mode === 'vault';
   const choosing = selecting || opening || (transitioning && !atBoss && !selectedVault);
-  const fighting = playing && !choosing;
+  const fighting = playing && !choosing && !revealing;
   const showTwins = fighting && atBoss && Boolean(bossPair);
   const showOil = fighting && atBoss && barrelBoss;
-  const bossName = barrelBoss ? '油桶首領' : bossPair ? '雙首領' : '單首領';
+  const bossKind = barrelBoss ? 'oil' : bossPair ? 'twins' : 'single';
+  const [bossName, bossRule] = bossIntros[bossKind];
   const showBossProgress = fighting && atBoss && !transitioning && !bossSupply && !bossReload;
   const inVault = fighting && !atBoss && Boolean(selectedVault);
   const target = inVault ? targets[stage - 1][selectedVault] : null;
@@ -131,7 +144,7 @@ function render() {
   const cost = price(bet) * purchaseCount;
   const ammoShortage = bossHealth - ammo;
   ui.game.dataset.mode = mode;
-  ui.arena.dataset.scene = ready ? 'intro' : finished ? 'settlement' : choosing ? 'vault' : 'fight';
+  ui.arena.dataset.scene = ready ? 'intro' : revealing ? 'reveal' : finished ? 'settlement' : choosing ? 'vault' : 'fight';
   ui.arena.dataset.target = fighting && atBoss ? (showTwins ? 'twins' : showOil ? 'oil' : 'boss') : target ?? '';
   ui.arena.dataset.vault = inVault ? selectedVault : '';
   ui.arena.toggleAttribute('data-boss-danger', fighting && atBoss && !attacking && shotsLeft === 1
@@ -143,6 +156,12 @@ function render() {
   renderOilBoss(showOil);
   ui.weapon.hidden = !fighting;
   ui.intro.hidden = !ready;
+  ui['boss-reveal'].hidden = !revealing;
+  if (revealing) {
+    ui['boss-reveal'].dataset.kind = bossKind;
+    text('boss-reveal-name', bossName);
+    text('boss-reveal-rule', bossRule);
+  }
   ui.vaults.hidden = !choosing;
   ui.decisions.hidden = !inVault || transitioning;
   ui.settlement.hidden = !finished;
@@ -187,6 +206,8 @@ function render() {
   ui['boss-progress'].hidden = !showBossProgress;
   healthBar.hidden = showBossProgress && showTwins;
   bossStageLabel.textContent = ready ? '首領' : bossName;
+  bossStageThumb.hidden = ready;
+  bossStageThumb.dataset.kind = bossKind;
   ui['boss-draw'].hidden = !choosing || stage !== 1;
   text('boss-draw', `本輪首領 · ${bossName}`);
   const healthParent = showBossProgress ? ui['boss-progress'] : stageCells[finalStage - 1];
@@ -476,8 +497,17 @@ function start() {
   targets = encounters();
   barrelBoss = mixedBossTrial && weightedIndex([1, 4]) === 0;
   bossPair = barrelBoss ? null : drawBossPair();
-  mode = 'vault';
+  mode = 'boss-reveal';
   hint = '';
+  render();
+  bossRevealTimer = setTimeout(enterFirstVault, 1500);
+  ui['boss-reveal-continue'].focus({ preventScroll: true });
+}
+
+function enterFirstVault() {
+  if (mode !== 'boss-reveal') return;
+  clearTimeout(bossRevealTimer);
+  mode = 'vault';
   render();
   ui['vault-coin'].focus({ preventScroll: true });
 }
@@ -588,6 +618,7 @@ ui.primary.addEventListener('click', () => {
   else if (mode === 'boss') fire();
   else if (mode === 'result') resetRound();
 });
+ui['boss-reveal-continue'].addEventListener('click', enterFirstVault);
 ui['forfeit-boss'].addEventListener('click', () => {
   if (mode === 'boss-supply') bossAttack('已放棄首領挑戰');
 });

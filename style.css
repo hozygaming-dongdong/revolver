@@ -52,6 +52,18 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .ladder { padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; list-style: none; }
 .ladder li { display: grid; place-content: center; text-align: center; padding: 6px 0; color: #caad88; font-size: clamp(.66rem, 3.2vw, .76rem); font-weight: 700; }
 .ladder li:last-child { gap: 2px; padding-block: 3px; background: linear-gradient(#431d10, #210b09); color: #ffce84; }
+.boss-stage-thumb {
+  width: 38px; height: 21px; justify-self: center; border: 1px solid #a45b3a; border-radius: 2px;
+  background: url('assets/boss.png') center 8% / 30px auto no-repeat, linear-gradient(#4f2b1d, #1a0b08);
+}
+.boss-stage-thumb[data-kind='twins'] {
+  background: url('assets/boss-runner.webp') left 9% / 20px auto no-repeat,
+    url('assets/boss-armored.webp') right 8% / 20px auto no-repeat, linear-gradient(#602d25, #200b09);
+}
+.boss-stage-thumb[data-kind='oil'] {
+  background: url('assets/barrel-cover.webp') left bottom / 22px auto no-repeat,
+    url('assets/boss.png') right 8% / 25px auto no-repeat, linear-gradient(#5e371c, #21110a);
+}
 .ladder .boss-health { width: 30px; gap: 2px; justify-self: center; }
 .ladder .boss-health i { height: 4px; }
 .ladder .current { color: #fff3cb; border-color: #ffb859; box-shadow: inset 0 0 11px #f2953b66, 0 0 7px #fb883b80; }
@@ -75,6 +87,7 @@ button:not(:disabled):active { filter: brightness(1.24); }
 }
 .arena[data-vault='ammo']::before { background: linear-gradient(#0e20278c, #48616a14 46%, #10101073 74%, #0a0b0c); }
 .arena:not([data-scene='fight']) :is(.gate-number, .shooter) { display: none; }
+.arena[data-scene='reveal'] .console { display: none; }
 .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 55% 42%, transparent 28%, #08050338 70%, #080503ad), linear-gradient(transparent 53%, #0c0704d6 96%); }
 .gate-number { position: absolute; top: 25%; left: 64%; color: #d0bba0; opacity: .63; font: 900 clamp(2.6rem, 12vw, 4rem)/1 'Barlow Condensed', Impact, sans-serif; text-shadow: 1px 2px #1c1009; }
 .enemy, .shooter { position: absolute; pointer-events: none; user-select: none; filter: drop-shadow(0 8px 8px #0009); transition: opacity .26s ease; }
@@ -516,15 +529,17 @@ button:not(:disabled):active { filter: brightness(1.24); }
   --gate-edge: #ff9979; --gate-light: #ffad88; --gate-metal: #492019;
   animation: boss-lockdown var(--transition-time) ease-out both;
 }
-.stage-transition::before, .stage-transition::after {
+:is(.stage-transition, .boss-reveal)::before, :is(.stage-transition, .boss-reveal)::after {
   content: ''; position: absolute; top: 0; bottom: 0; width: 50%;
   background: repeating-linear-gradient(0deg, transparent 0 52px, #090504af 53px 54px, #e2ad7920 55px 57px),
     linear-gradient(100deg, #140e0c, var(--gate-metal) 53%, #20130f);
   box-shadow: inset 0 0 22px #0e0807;
+}
+.stage-transition::before, .stage-transition::after {
   animation: stage-shutter var(--transition-time) cubic-bezier(.2,.68,.31,1) both;
 }
-.stage-transition::before { --shutter-offset: -103%; left: 0; border-right: 2px solid var(--gate-edge); }
-.stage-transition::after { --shutter-offset: 103%; right: 0; border-left: 2px solid var(--gate-edge); }
+:is(.stage-transition, .boss-reveal)::before { --shutter-offset: -103%; left: 0; border-right: 2px solid var(--gate-edge); }
+:is(.stage-transition, .boss-reveal)::after { --shutter-offset: 103%; right: 0; border-left: 2px solid var(--gate-edge); }
 .stage-transition[data-boss='true']::before { box-shadow: inset -12px 0 46px #f7473066; }
 .stage-transition[data-boss='true']::after { box-shadow: inset 12px 0 46px #f7473066; }
 .transition-plate {
@@ -548,6 +563,60 @@ button:not(:disabled):active { filter: brightness(1.24); }
   0%, 100% { box-shadow: inset 0 0 0 transparent; }
   62% { box-shadow: inset 0 0 90px #eb332b99; }
 }
+
+.boss-reveal {
+  --gate-edge: #cf8f5a; --gate-metal: #38241d; --reveal-glow: #ce622c76;
+  position: absolute; z-index: 7; inset: 0; isolation: isolate; overflow: hidden;
+  display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px;
+  padding: clamp(12px, 3dvh, 27px) 14px 52px; text-align: center;
+  background: radial-gradient(ellipse at 50% 46%, var(--reveal-glow), transparent 64%),
+    linear-gradient(#1a100bc2, #2e191f41 50%, #120a07 92%), url('assets/corridor.jpg') center / cover;
+}
+.boss-reveal[data-kind='twins'] { --reveal-glow: #bb443d78; }
+.boss-reveal[data-kind='oil'] { --reveal-glow: #f09a4175; }
+.boss-reveal::before, .boss-reveal::after {
+  z-index: 2; pointer-events: none;
+  animation: reveal-shutter .38s cubic-bezier(.2,.68,.31,1) both;
+}
+@keyframes reveal-shutter { to { transform: translateX(var(--shutter-offset)); } }
+.boss-reveal-art {
+  --portrait-max: calc((100cqh - 13px) * .6667);
+  position: relative; container-type: size; display: flex; align-items: center; justify-content: center; gap: 5%;
+  width: min(100%, 470px); height: 100%; min-height: 0; margin-inline: auto;
+}
+.boss-reveal-figure {
+  display: grid; justify-items: center; gap: 7px; width: min(77%, var(--portrait-max)); min-width: 0;
+}
+.boss-reveal-figure img {
+  display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: contain;
+  filter: drop-shadow(0 8px 10px #080302de);
+}
+.boss-reveal-figure .boss-health { width: 62px; align-self: start; }
+.boss-reveal-figure .boss-health i { height: 6px; }
+.reveal-twin { width: min(45%, var(--portrait-max)); }
+.reveal-runner { width: min(42%, var(--portrait-max)); }
+.boss-reveal[data-kind='twins'] .reveal-single, .boss-reveal:not([data-kind='twins']) .reveal-twin,
+.boss-reveal:not([data-kind='oil']) .boss-reveal-barrel { display: none; }
+.boss-reveal[data-kind='oil'] .reveal-single { width: min(71%, var(--portrait-max)); margin-left: 24%; }
+.boss-reveal-barrel { position: absolute; width: min(42%, 184px); left: 1%; bottom: 3%; }
+.boss-reveal-barrel img { display: block; width: 100%; filter: drop-shadow(0 5px 8px #080302c2); }
+.boss-reveal-barrel::after {
+  content: ''; position: absolute; top: 13%; left: 32%; width: 36%; height: 19%;
+  border: 1px solid #ffce81; border-radius: 50%; box-shadow: 0 0 12px #f78d34, inset 0 0 8px #f78d34;
+}
+.boss-reveal-caption {
+  align-self: end; justify-self: center; padding: 8px 15px; max-width: 100%;
+  background: linear-gradient(160deg, #352018, #170d0a); border: 1px solid var(--gate-edge);
+  box-shadow: inset 0 0 0 3px #1f120d, 0 6px 18px #080302b8;
+}
+.boss-reveal-caption h2 { margin: 0 0 4px; color: #ffe3aa; font-size: clamp(1.45rem, 6.8vw, 2.4rem); line-height: 1.12; }
+.boss-reveal-caption p { margin: 0; color: #f3d5b8; font-size: clamp(.82rem, 3.6vw, 1rem); font-weight: 800; }
+.boss-reveal-continue {
+  position: absolute; z-index: 3; inset: 0; width: 100%; display: grid; place-items: end center;
+  padding: 0 12px max(12px, env(safe-area-inset-bottom)); border: 0; background: transparent;
+  color: #d8b898; font-size: .76rem; font-weight: 700;
+}
+.boss-reveal-continue:focus-visible { outline-offset: -4px; }
 
 .settlement {
   z-index: 3; position: relative; grid-row: 1; align-self: center; display: grid; justify-items: center;
@@ -624,12 +693,14 @@ dialog .primary { min-height: 44px; font-size: 1.1rem; }
 @media (max-width: 540px) and (max-height: 550px) {
   .console { gap: 4px; }
   .boss-enemy { height: 59%; top: 31%; }
+  .boss-stage-thumb { height: 16px; }
 }
 @media (max-width: 360px) {
   .buy-ammo small { display: block; margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .stage-transition[data-boss='true'], .stage-transition::before, .stage-transition::after, .transition-plate { animation: none; }
+  .boss-reveal::before, .boss-reveal::after { display: none; }
   .enemy, .shooter, .muzzle, .impact, .vignette, [data-spin='locked'] .pointer { animation: none !important; }
   [data-outcome='clear'] #result-payout,
   [data-outcome='clear'] .settlement { animation: none; }
