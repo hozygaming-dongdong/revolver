@@ -4,229 +4,71 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#15100d">
-  <meta name="description" content="選金幣庫累積倍率，選軍械庫補彈，挑戰第六關首領。">
-  <title>REVOLVER · 封鎖區</title>
-  <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
-  <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=22">
-  <script defer src="rules.js?v=20"></script>
-  <script defer src="audio.js?v=20"></script>
-  <script defer src="game.js?v=22"></script>
+  <meta name="description" content="左輪追獵：每一槍選擇穩健彈藥或獎金 UP，撐到第八回合抽出最高 10X。">
+  <title>REVOLVER · 左輪追獵</title>
+  <link rel="stylesheet" href="style.css?v=demo-1">
+  <script defer src="rules.js?v=demo-1"></script>
+  <script defer src="game.js?v=demo-1"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
     <header class="hud">
-      <div class="hud-row">
-        <div class="meter">
-          <img src="assets/coin.png" width="34" height="34" alt="">
-          <div><span>餘額</span><strong id="balance">$10,000</strong></div>
-        </div>
-        <div class="meter bet-meter">
-          <button class="step" id="bet-down" aria-label="減少押注">−</button>
-          <div><span>本輪押注</span><strong id="bet">$100</strong></div>
-          <button class="step" id="bet-up" aria-label="增加押注">+</button>
-        </div>
-        <button class="menu-toggle" id="open-menu" type="button" aria-label="遊戲選單" aria-haspopup="dialog" aria-controls="menu">
-          <span aria-hidden="true"></span>
-        </button>
+      <div class="brand"><span>REVOLVER</span><small>左輪追獵 DEMO</small></div>
+      <div class="hud-stats">
+        <div><span>回合</span><strong id="round-number">—</strong></div>
+        <div><span>彈藥</span><strong id="ammo">6 / 6</strong></div>
+        <div><span>UP</span><strong id="up">0 層</strong></div>
       </div>
-      <ol class="ladder" id="ladder" aria-label="關卡進度"></ol>
-      <div class="run-bonus" id="run-bonus" hidden>
-        <span>累積倍率 <strong id="run-multiplier">1×</strong></span>
-        <strong class="jackpot-banner" id="jackpot-banner">WIN UP TO 10×</strong>
-      </div>
+      <div class="jackpot" id="jackpot">WIN UP TO 10X</div>
+      <ol class="progress" id="progress" aria-label="八回合進度"></ol>
     </header>
 
-    <div class="arena" id="arena" data-scene="intro">
-      <div class="gate-number" id="gate-number" aria-hidden="true">01</div>
-      <div class="stage-status" id="stage-status" hidden>
-        <div class="stage-plate" id="stage-plate"></div>
-        <p class="encounter-detail" id="encounter-detail">
-          <strong id="encounter-reward"></strong>
-          <span id="encounter-odds"></span>
-        </p>
-        <div class="boss-progress" id="boss-progress" role="group" aria-label="首領戰進度" hidden>
-          <span class="boss-health" id="boss-health" role="meter" aria-label="首領血量" aria-valuemin="0"></span>
-          <span class="boss-shots">剩餘開槍 <strong id="boss-shots-left"></strong></span>
-        </div>
-      </div>
-      <img class="enemy" id="enemy" src="assets/zombie.png" alt="" hidden>
-      <img class="enemy boss-enemy" id="boss-enemy" src="assets/boss.png" alt="" hidden>
-      <div class="oil-scene" id="oil-scene" role="group" aria-label="油桶首領射擊目標" hidden>
-        <div class="barrel-cover" id="barrel-cover">
-          <img id="barrel-prop" width="720" height="360" alt="" draggable="false">
-          <button class="barrel-target" id="barrel-target" type="button" aria-label="射擊油桶，實彈有一半機率引爆">
-            <span>實彈 50% 引爆</span>
-          </button>
-        </div>
-        <div class="twin-lane">
-          <button class="twin-target oil-boss-target" id="oil-boss-target" type="button" aria-label="射擊油桶首領">
-            <img class="twin-art" id="oil-boss-art" src="assets/boss.png" alt="" draggable="false">
-          </button>
-        </div>
-      </div>
-      <div class="twin-bosses" id="twin-bosses" role="group" aria-label="雙首領射擊目標" hidden>
-        <div class="twin-lane">
-          <button class="twin-target" type="button" data-name="左側突進首領">
-            <img class="twin-art" src="assets/boss-runner.webp" alt="" draggable="false">
-            <span class="twin-status" aria-hidden="true">
-              <span class="boss-health"><i></i></span>
-              <span class="twin-warning" hidden>下一步撲擊</span>
-            </span>
-          </button>
-        </div>
-        <div class="twin-lane">
-          <button class="twin-target" type="button" data-name="右側重甲首領">
-            <img class="twin-art" src="assets/boss-armored.webp" alt="" draggable="false">
-            <span class="twin-status" aria-hidden="true">
-              <span class="boss-health"><i></i><i></i></span>
-              <span class="twin-warning" hidden>下一步撲擊</span>
-            </span>
-          </button>
-        </div>
-      </div>
-      <img class="shooter" src="assets/gunslinger.png" alt="">
-      <div class="muzzle" id="muzzle" aria-hidden="true"></div>
-      <div class="impact" id="impact" aria-hidden="true"></div>
-      <div class="tracer" id="tracer" aria-hidden="true"></div>
-      <div class="vignette" aria-hidden="true"></div>
-
-      <section class="intro" id="intro" aria-labelledby="intro-title">
-        <h1 id="intro-title">REVOLVER <span>封鎖區</span></h1>
-        <div class="intro-prize"><span>WIN UP TO</span><strong id="intro-cap">10×</strong></div>
-        <img class="intro-cache" src="assets/final-cache.webp" width="690" height="460" fetchpriority="high" alt="">
-        <p>擊倒首領，開啟最終寶箱</p>
+    <section class="arena" id="arena">
+      <div class="gate-number" aria-hidden="true">08</div>
+      <section class="intro" id="intro">
+        <img src="assets/boss.png" alt="" class="hero-art">
+        <p class="eyebrow">每一槍都是選擇</p>
+        <h1>追到第八回合<br>抽一次最高 10X</h1>
+        <p id="goal">一路撐到第 8 回合，最後抽一次獎金倍率。</p>
+        <div class="rule-strip"><span>實彈：目標死亡</span><span>空炮：玩家死亡</span></div>
+        <button class="primary" id="start" type="button">開始追獵</button>
       </section>
 
-      <section class="vaults" id="vaults" aria-labelledby="vault-title" hidden>
-        <div class="vault-heading">
-          <h2 id="vault-title">選擇房間</h2>
-          <p>擊倒房內守衛即可開箱</p>
-          <p class="boss-draw" id="boss-draw" hidden></p>
+      <section class="play" id="play" hidden>
+        <div class="stage-copy">
+          <p class="eyebrow" id="round-title">進入封鎖區</p>
+          <h1 id="play-goal">目標：完成開槍選擇。</h1>
+          <p class="shot-rule">選一隻殭屍，開槍結束本回合。</p>
         </div>
-        <div class="vault-doors">
-          <button class="vault-door vault-coin" id="vault-coin" type="button">
-            <span class="vault-door-art" aria-hidden="true"></span>
-            <span class="vault-tier" id="vault-coin-tier"></span>
-            <span class="vault-label"><strong>金幣庫</strong><span>累積倍率</span></span>
+        <div class="target-zone" id="target">
+          <button class="target-card ammo-target" id="choice-ammo" type="button">
+            <span class="target-image"><img src="assets/zombie.png" alt="補彈殭屍"></span>
+            <strong>補彈殭屍</strong>
+            <small id="ammo-value">抽 +0 / +1 / +2</small>
+            <em>穩健子彈</em>
           </button>
-          <button class="vault-door vault-ammo" id="vault-ammo" type="button">
-            <span class="vault-door-art" aria-hidden="true"></span>
-            <span class="vault-tier" id="vault-ammo-tier"></span>
-            <span class="vault-label"><strong>軍械庫</strong><span>補充彈藥</span></span>
+          <button class="target-card bonus-target" id="choice-bonus" type="button">
+            <span class="target-image"><img src="assets/boss.png" alt="獎金殭屍"></span>
+            <strong>獎金殭屍</strong>
+            <small id="bonus-value">成功累積 1 層 UP</small>
+            <em>拚大獎</em>
           </button>
         </div>
       </section>
 
-      <section class="settlement" id="settlement" aria-labelledby="result-title" hidden>
-        <img class="result-cache" id="result-cache" src="assets/final-cache.webp" width="690" height="460" alt="" hidden>
-        <h2 id="result-title"></h2>
-        <p class="result-amount" id="result-amount"><span>實領獎金</span><strong id="result-payout"></strong></p>
-        <p class="result-breakdown" id="result-breakdown" hidden></p>
-        <p class="result-net"><span>本輪淨額</span><strong id="result-net"></strong></p>
+      <section class="result" id="result" hidden>
+        <img src="assets/final-cache.webp" alt="" class="result-art">
+        <p class="eyebrow" id="result-title">本局結束</p>
+        <h1 id="result-message"></h1>
+        <strong class="payout" id="result-payout">$0</strong>
+        <p id="result-detail"></p>
+        <button class="primary" id="restart" type="button">再玩一輪</button>
       </section>
 
-      <div class="console">
-        <div class="weapon" id="weapon" aria-hidden="true" hidden>
-          <span class="pointer"></span>
-          <div class="cylinder" id="cylinder"></div>
-        </div>
-        <div class="ammo-controls">
-          <p class="ammo-readout">
-            <span>彈藥 <strong id="ammo">3 / 6</strong></span>
-            <span class="boss-ammo" id="boss-ammo" hidden></span>
-          </p>
-          <button class="buy-ammo" id="buy" type="button" hidden>加購 1 發 <small id="buy-cost"></small></button>
-        </div>
-        <div class="decisions" id="decisions" role="group" aria-label="本關行動" hidden>
-          <button class="choice" id="skip" type="button">
-            <strong>繞過</strong><small>保留彈藥</small>
-          </button>
-          <button class="choice choice-fire" id="fire" type="button">
-            <strong>開槍</strong><small id="fire-odds"></small>
-          </button>
-        </div>
-        <button class="primary" id="primary" type="button">
-          <img src="assets/cartridge.png" width="40" height="40" alt=""><span id="primary-text">開始遊戲</span>
-        </button>
-        <button class="forfeit-boss" id="forfeit-boss" type="button" hidden>放棄本輪</button>
+      <div class="console" id="fire-panel">
         <p class="hint" id="hint" role="status"></p>
       </div>
-      <section class="loot-overlay" id="loot" aria-labelledby="loot-title" hidden>
-        <div class="loot-panel">
-          <h2 id="loot-title"></h2>
-          <div class="loot-wheel" id="loot-wheel">
-            <span class="pointer" aria-hidden="true"></span>
-            <div class="loot-disc" id="loot-disc"></div>
-            <img class="loot-chest" id="loot-chest" alt="">
-          </div>
-          <p class="loot-result" id="loot-result" role="status"></p>
-        </div>
-      </section>
-      <div class="stage-transition" id="stage-transition" hidden>
-        <div class="transition-plate" role="status">
-          <p id="transition-result"></p>
-          <strong id="transition-title"></strong>
-          <p id="transition-boss" hidden></p>
-        </div>
-      </div>
-      <section class="boss-reveal" id="boss-reveal" aria-labelledby="boss-reveal-name" aria-describedby="boss-reveal-rule" hidden>
-        <div class="boss-reveal-art" aria-hidden="true">
-          <div class="boss-reveal-figure reveal-single">
-            <span class="boss-health"><i class="remaining"></i><i class="remaining"></i><i class="remaining"></i></span>
-            <img src="assets/boss.png" alt="">
-          </div>
-          <div class="boss-reveal-figure reveal-twin reveal-runner">
-            <span class="boss-health"><i class="remaining"></i></span>
-            <img src="assets/boss-runner.webp" alt="">
-          </div>
-          <div class="boss-reveal-figure reveal-twin">
-            <span class="boss-health"><i class="remaining"></i><i class="remaining"></i></span>
-            <img src="assets/boss-armored.webp" alt="">
-          </div>
-          <div class="boss-reveal-barrel"><img id="reveal-barrel" alt=""></div>
-        </div>
-        <div class="boss-reveal-caption">
-          <h2 id="boss-reveal-name"></h2>
-          <p id="boss-reveal-rule"></p>
-        </div>
-        <button class="boss-reveal-continue" id="boss-reveal-continue" type="button"
-          aria-describedby="boss-reveal-name boss-reveal-rule">
-          <span>點一下進入第一關</span>
-        </button>
-      </section>
-    </div>
+    </section>
   </main>
-
-  <dialog id="menu" aria-labelledby="menu-title">
-    <h2 id="menu-title">遊戲選單</h2>
-    <form method="dialog"><button class="menu-close" aria-label="關閉選單">×</button></form>
-    <ul class="menu-list">
-      <li><button id="sound" type="button" aria-label="音效靜音" aria-pressed="false">
-        音效 <span id="sound-state" aria-hidden="true">開</span>
-      </button></li>
-      <li><button id="music" type="button" aria-label="背景音樂" aria-pressed="true">
-        背景音樂 <span id="music-state" aria-hidden="true">開</span>
-      </button></li>
-      <li><button id="reset-assets" type="button">
-        資產重設 <span id="reset-note">$10,000</span>
-      </button></li>
-      <li><button id="help" type="button">遊戲說明 <span aria-hidden="true">›</span></button></li>
-    </ul>
-  </dialog>
-
-  <dialog id="rules" aria-labelledby="rules-title">
-    <h2 id="rules-title">遊戲說明</h2>
-    <p>每輪從 3 發起手，彈巢最多裝 6 發。每次開槍從六格均勻抽一格，抽到子彈才消耗一發。</p>
-    <p>前五關先看門上的銅、銀、金等級，再選擇房間。進房後可開一槍或繞過，擊倒守衛即可開箱。軍械庫補 0 至 3 發，金幣庫開出 1×、1.2×、1.5× 或 2×，乘上目前的累積倍率。繞過或空槍直接進下一關。</p>
-    <p>兩個庫各自抽出銅箱 45%、銀箱 43%、金箱 12%。金幣金箱至少開出 1.5×。軍械庫銅箱有 5% 機率開空，銀箱至少補 1 發，金箱至少補 2 發。</p>
-    <p>前五關選庫時，每發可用押注的 20% 加購，付費最多補到 3 發。</p>
-    <p id="boss-draw-rules">開局抽出單首領（60%）或雙首領（40%）。首領戰最多開 4 槍，入場至少要有 3 發彈藥。單首領有 3 格血。</p>
-    <p>雙首領左邊 1 格血、右邊 2 格血。點角色即可開槍，命中讓牠後退一步，另一隻繼續逼近。空槍時兩隻一起前進。任一隻撲到面前就輸，兩隻都擊倒才通關。</p>
-    <p id="barrel-rules" hidden>遇到油桶首領時，點首領命中可扣一格血。點油桶抽到實彈後，有 50% 引爆並立即通關，另 50% 打中矮牆，碎石會蓋住油桶。抽到空膛只扣一次開槍機會。</p>
-    <p>第五關結束時若不足 3 發，可在首領開戰前一次補齊，每發仍為押注的 20%。放棄補彈會結束本輪。</p>
-    <p>打贏首領後，最終寶箱的基礎獎金乘上累積倍率。基礎獎金至少返還押注及補彈費，最高為原押注的 10×。首領戰失敗，倍率不結算，本局投入不退回。</p>
-    <form method="dialog"><button class="primary">返回遊戲</button></form>
-  </dialog>
 </body>
 </html>
