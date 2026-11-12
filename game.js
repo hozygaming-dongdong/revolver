@@ -1,150 +1,252 @@
-const { slots, rounds, prepRounds, startAmmo, shoot, drawAmmo, drawFinalMultiplier } = revolverRules;
+const { slots, rounds, prepRounds, startAmmo, initialCylinder, countAmmo, loadAmmo,
+  ammoDraw, finalDraw, chamberIndex } = revolverRules;
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
-const money = value => `$${value.toLocaleString('en-US')}`;
-const multiplierText = value => `${value.toLocaleString('zh-TW', { maximumFractionDigits: 1 })}X`;
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const pause = ms => new Promise(resolve => setTimeout(resolve, reducedMotion.matches ? Math.min(ms, 140) : ms));
+const money = value => '$' + value.toLocaleString('en-US');
+const multiplierText = value => value.toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + 'X';
 const baseReward = 100;
-
-let round = 0;
-let ammo = startAmmo;
-let up = 0;
-let mode = 'ready';
-let busy = false;
-let currentChoice = null;
-
 const roundLabels = ['進入封鎖區', '穿過廢墟', '找到蹤跡', '逼近巢穴', '最後備戰', '生死段一', '生死段二', '最終決鬥'];
+const finalLabels = [1.2, 1.5, 2, 3, 10];
 
-function setText(id, value) {
+let mode = 'ready';
+let round = 0;
+let up = 0;
+let selected = null;
+let rotation = 0;
+let chambers = initialCylinder();
+
+const chamberCells = chambers.map((loaded, index) => {
+  const cell = document.createElement('i');
+  cell.dataset.index = index;
+  cell.className = loaded ? 'loaded' : '';
+  ui.cylinder.append(cell);
+  return cell;
+});
+
+function text(id, value) {
   ui[id].textContent = value;
 }
 
 function setHint(value, tone = '') {
-  setText('hint', value);
+  text('hint', value);
   ui.hint.dataset.tone = tone;
 }
 
 function renderProgress() {
-  ui.progress.innerHTML = '';
-  for (let index = 1; index <= rounds; index++) {
+  ui.progress.replaceChildren(...Array.from({ length: rounds }, (_, index) => {
     const cell = document.createElement('li');
-    cell.textContent = index;
-    cell.className = index < round ? 'cleared' : index === round ? 'current' : '';
-    ui.progress.append(cell);
-  }
+    cell.textContent = index + 1;
+    cell.className = index < round ? 'cleared' : index === round - 1 ? 'current' : '';
+    return cell;
+  }));
+}
+
+function renderCylinder() {
+  text('ammo', countAmmo(chambers));
+  chamberCells.forEach((cell, index) => {
+    cell.classList.toggle('loaded', chambers[index]);
+    cell.classList.remove('selected');
+  });
 }
 
 function render() {
   const ready = mode === 'ready';
   const result = mode === 'result';
-  const play = !ready && !result;
+  const play = ['play', 'spinning', 'loot'].includes(mode);
   ui.game.dataset.mode = mode;
   ui.intro.hidden = !ready;
-  ui.play.hidden = !play;
+  ui.hunt.hidden = !play;
   ui.result.hidden = !result;
-  ui['fire-panel'].hidden = !play;
-  setText('round-title', ready ? '八回合左輪追獵' : roundLabels[Math.max(round - 1, 0)]);
-  setText('round-number', ready ? '—' : `${round} / ${rounds}`);
-  setText('ammo', `${ammo} / ${slots}`);
-  setText('up', `${up} 層`);
-  setText('jackpot', 'WIN UP TO 10X');
-  setText('goal', ready ? '一路撐到第 8 回合，最後抽一次獎金倍率。' : `目標：完成第 ${round} 回合的開槍選擇。`);
-  setText('play-goal', `目標：完成第 ${round} 回合的開槍選擇。`);
+  ui['weapon-panel'].hidden = !play;
+  ui.route.hidden = ready || result;
+  text('round-number', ready ? '—' : round + ' / ' + rounds);
+  text('up', up);
+  text('route-title', ready ? '進入封鎖區' : roundLabels[round - 1]);
+  ui['route-dot'].style.setProperty('--progress', Math.max(0, round - 1) / (rounds - 1) * 100 + '%');
   renderProgress();
-  ui['choice-ammo'].disabled = busy || !play || round > prepRounds;
-  ui['choice-bonus'].disabled = busy || !play;
-  ui['choice-ammo'].classList.toggle('selected', currentChoice === 'ammo');
-  ui['choice-bonus'].classList.toggle('selected', currentChoice === 'bonus');
-  ui['ammo-value'].textContent = round > prepRounds ? '後段不補彈' : '抽 +0 / +1 / +2';
-  ui['bonus-value'].textContent = '成功累積 1 層 UP';
+  renderCylinder();
+  ui['choice-ammo'].disabled = mode !== 'play' || round > prepRounds;
+  ui['choice-bonus'].disabled = mode !== 'play';
+  ui['choice-ammo'].classList.toggle('selected', selected === 'ammo');
+  ui['choice-bonus'].classList.toggle('selected', selected === 'bonus');
+  ui.fire.disabled = mode !== 'play' || selected === null || !countAmmo(chambers);
+  text('shot-state', selected === null ? '選擇目標' : selected === 'ammo' ? '補彈路線' : '獎金路線');
+  ui['choice-ammo'].querySelector('small').textContent = round > prepRounds ? '生死段封鎖' : '轉輪抽 +0 / +1 / +2';
 }
 
-function resetRun() {
-  round = 0;
-  ammo = startAmmo;
-  up = 0;
+function reset() {
   mode = 'ready';
-  busy = false;
-  currentChoice = null;
-  setHint('先看懂兩種選擇，再開始第一槍。');
-  render();
-}
-
-function startRun() {
-  round = 1;
-  ammo = startAmmo;
+  round = 0;
   up = 0;
+  selected = null;
+  rotation = 0;
+  chambers = initialCylinder();
+  ui['enemy-stage'].dataset.state = '';
+  ui['loot'].hidden = true;
+  setHint('先選目標，再轉彈巢。');
+  render();
+}
+
+function start() {
+  revolverAudio.unlock();
+  revolverAudio.startMusic();
   mode = 'play';
-  currentChoice = null;
-  setHint('每回合必須開槍；實彈成功，空炮即死。');
+  round = 1;
+  up = 0;
+  selected = null;
+  chambers = initialCylinder();
+  setHint('選擇你要追逐的目標。');
   render();
 }
 
-async function choose(choice) {
-  if (busy || mode !== 'play' || !ammo) {
-    if (!ammo) fail('彈巢已空，無法完成下一槍。');
-    return;
-  }
-  currentChoice = choice;
-  busy = true;
+function selectChoice(choice) {
+  if (mode !== 'play' || (choice === 'ammo' && round > prepRounds)) return;
+  selected = choice;
+  ui['enemy-stage'].dataset.target = choice;
+  setHint(choice === 'ammo' ? '補彈：成功後轉輪抽出補充數量。' : '獎金 UP：成功後累積一層，最後抽倍率。');
   render();
-  ui.target.classList.add('aiming');
-  setHint(choice === 'ammo' ? '你選擇了穩健子彈，現在開槍。' : '你選擇了獎金 UP，現在開槍。');
-  await wait(460);
-  ui.target.classList.remove('aiming');
-  const shot = shoot(ammo);
-  if (!shot.hit) {
-    fail('空炮。這一槍沒有子彈，玩家死亡。');
+}
+
+function spinDial(selectedIndex, duration = 900) {
+  const step = 360 / slots;
+  const startRotation = rotation;
+  const endRotation = startRotation + 1080 + (720 - selectedIndex * step - startRotation % 360) % 360;
+  const animation = ui.cylinder.animate([
+    { transform: 'rotate(' + startRotation + 'deg)' },
+    { transform: 'rotate(' + endRotation + 'deg)' },
+  ], { duration: reducedMotion.matches ? 0 : duration, easing: 'cubic-bezier(.17,.62,.24,1)' });
+  let lastTick = Math.floor(startRotation / step);
+  const tick = () => {
+    const progress = animation.effect ? animation.effect.getComputedTiming().progress || 1 : 1;
+    const crossed = Math.floor((startRotation + (endRotation - startRotation) * progress) / step);
+    if (crossed !== lastTick) {
+      revolverAudio.play('tick');
+      lastTick = crossed;
+    }
+    if (progress < 1) requestAnimationFrame(tick);
+  };
+  if (!reducedMotion.matches) requestAnimationFrame(tick);
+  return animation.finished.then(() => {
+    rotation = endRotation;
+    ui.cylinder.style.transform = 'rotate(' + rotation + 'deg)';
+    revolverAudio.play('lock');
+  });
+}
+
+function buildWheel(kind) {
+  const values = kind === 'ammo' ? [0, 1, 2] : [1.2, 1.5, 2, 3, 10];
+  ui['loot-disc'].replaceChildren(...values.map((value, index) => {
+    const pocket = document.createElement('span');
+    pocket.className = 'wheel-pocket';
+    pocket.style.setProperty('--angle', index * (360 / values.length) + 'deg');
+    pocket.innerHTML = kind === 'ammo'
+      ? (value ? '<img src="assets/cartridge.png" alt=""><b>+' + value + '</b>' : '<b>0</b>')
+      : '<b>' + value + 'X</b>';
+    return pocket;
+  }));
+}
+
+function pickWeighted(list) {
+  let remaining = Math.random() * list.reduce((sum, item) => sum + item.weight, 0);
+  return list.findIndex(item => (remaining -= item.weight) < 0);
+}
+
+async function spinReward(kind) {
+  const isFinal = kind === 'final';
+  const list = isFinal ? revolverRules.finalDraw : revolverRules.ammoDraw;
+  const index = pickWeighted(list);
+  const value = isFinal ? finalDraw[Math.min(finalDraw.length - 1, index + up)].multiplier : ammoDraw[index].value;
+  buildWheel(isFinal ? 'final' : 'ammo');
+  ui['loot-core'].src = isFinal ? 'assets/coin.png' : 'assets/cartridge.png';
+  text('loot-kicker', isFinal ? '最終獎金抽選' : '補給抽選');
+  text('loot-title', isFinal ? '最後一槍，抽出倍率' : '轉出你的補給');
+  text('loot-result', '轉輪啟動中…');
+  ui.loot.hidden = false;
+  mode = 'loot';
+  render();
+  await pause(320);
+  const visualIndex = index;
+  const count = isFinal ? finalLabels.length : 3;
+  const step = 360 / count;
+  const end = 1440 + (360 - visualIndex * step);
+  const animation = ui['loot-disc'].animate([
+    { transform: 'rotate(0deg)' },
+    { transform: 'rotate(' + end + 'deg)' },
+  ], { duration: reducedMotion.matches ? 0 : 1500, easing: 'cubic-bezier(.17,.62,.24,1)' });
+  await animation.finished;
+  ui['loot-disc'].style.transform = 'rotate(' + end + 'deg)';
+  text('loot-result', isFinal ? '抽到 ' + multiplierText(value) : '補充 ' + value + ' 發');
+  revolverAudio.play('lock');
+  await pause(850);
+  ui.loot.hidden = true;
+  return value;
+}
+
+async function fire() {
+  if (mode !== 'play' || selected === null || !countAmmo(chambers)) return;
+  const choice = selected;
+  const chamber = chamberIndex();
+  const hit = chambers[chamber];
+  mode = 'spinning';
+  ui['enemy-stage'].dataset.state = 'aim';
+  text('shot-state', '彈巢旋轉中');
+  render();
+  await spinDial(chamber);
+  chamberCells[chamber].classList.add('selected');
+  await pause(130);
+  chambers[chamber] = false;
+  if (!hit) {
+    revolverAudio.play('empty');
+    ui['enemy-stage'].dataset.state = 'miss';
+    setHint('空炮。追獵中止。', 'loss');
+    await pause(700);
+    finish(false);
     return;
   }
-  ammo = shot.ammo;
+  revolverAudio.play('fire');
+  ui['enemy-stage'].dataset.state = 'hit';
+  setHint('命中。目標倒下。', 'success');
+  await pause(650);
   if (choice === 'ammo') {
-    const gained = drawAmmo();
-    ammo = Math.min(slots, ammo + gained);
-    setHint(`實彈命中補給殭屍，彈藥 +${gained}。`, 'success');
+    const gained = await spinReward('ammo');
+    chambers = loadAmmo(chambers, gained);
   } else {
-    up += 1;
-    setHint('實彈命中獎金殭屍，累積 UP +1。', 'success');
+    up++;
+    text('up', up);
+    ui['enemy-stage'].dataset.state = 'up';
+    await pause(430);
   }
-  await wait(700);
   if (round === rounds) {
-    finish();
+    const finalMultiplier = await spinReward('final');
+    finish(true, finalMultiplier);
     return;
   }
-  round += 1;
-  currentChoice = null;
-  busy = false;
+  round++;
+  selected = null;
+  mode = 'play';
+  ui['enemy-stage'].dataset.state = '';
+  setHint(round > prepRounds ? '生死段：只剩獎金路線。' : '下一回合，選擇你的目標。');
   render();
-  setHint(round > prepRounds ? '進入生死段：後三回合不再補彈。' : '選擇下一個要追逐的目標。');
 }
 
-function fail(message) {
+function finish(win, finalMultiplier = 0) {
   mode = 'result';
-  busy = false;
-  setText('result-title', '本局結束');
-  setText('result-message', message);
-  setText('result-payout', '$0');
-  setText('result-detail', `完成 ${Math.max(round - 1, 0)} / ${rounds} 回合 · 累積 ${up} 層 UP`);
-  ui.result.dataset.outcome = 'loss';
+  ui.loot.hidden = true;
+  ui['enemy-stage'].dataset.state = win ? 'clear' : 'miss';
+  text('result-kicker', win ? '追獵完成' : '追獵中止');
+  text('result-title', win ? '最終倍率 ' + multiplierText(finalMultiplier) : '空炮，玩家死亡');
+  text('result-payout', win ? money(Math.round(baseReward * finalMultiplier)) : '$0');
+  text('result-detail', win ? '第 8 回合完成 · 累積 UP ' + up + ' 層' : '完成 ' + Math.max(0, round - 1) + ' / ' + rounds + ' 回合 · UP ' + up + ' 層');
+  setHint(win ? '獎金已結算。' : '再試一次。', win ? 'success' : 'loss');
   render();
 }
 
-function finish() {
-  const draw = drawFinalMultiplier(up);
-  const payout = Math.round(baseReward * draw.multiplier);
-  mode = 'result';
-  busy = false;
-  setText('result-title', '通關成功');
-  setText('result-message', `最終抽到 ${multiplierText(draw.multiplier)}。`);
-  setText('result-payout', money(payout));
-  setText('result-detail', `基礎獎金 ${money(baseReward)} · 原始抽到 ${multiplierText(draw.baseMultiplier)} · UP ${up} 層`);
-  ui.result.dataset.outcome = 'win';
-  render();
-}
+ui.start.addEventListener('click', start);
+ui.restart.addEventListener('click', reset);
+ui['choice-ammo'].addEventListener('click', () => selectChoice('ammo'));
+ui['choice-bonus'].addEventListener('click', () => selectChoice('bonus'));
+ui.fire.addEventListener('click', fire);
 
-ui.start.addEventListener('click', startRun);
-ui['choice-ammo'].addEventListener('click', () => choose('ammo'));
-ui['choice-bonus'].addEventListener('click', () => choose('bonus'));
-ui.restart.addEventListener('click', resetRun);
-
-resetRun();
+reset();

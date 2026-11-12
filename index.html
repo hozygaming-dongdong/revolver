@@ -3,71 +3,97 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#15100d">
-  <meta name="description" content="左輪追獵：每一槍選擇穩健彈藥或獎金 UP，撐到第八回合抽出最高 10X。">
+  <meta name="theme-color" content="#120b08">
+  <meta name="description" content="REVOLVER 左輪追獵：選目標、轉彈巢、一路拚到最高 10X。">
   <title>REVOLVER · 左輪追獵</title>
-  <link rel="stylesheet" href="style.css?v=demo-1">
-  <script defer src="rules.js?v=demo-1"></script>
-  <script defer src="game.js?v=demo-1"></script>
+  <link rel="preload" as="image" href="assets/corridor.webp" fetchpriority="high">
+  <link rel="stylesheet" href="style.css?v=demo-2">
+  <script defer src="rules.js?v=demo-2"></script>
+  <script defer src="audio.js?v=demo-2"></script>
+  <script defer src="game.js?v=demo-2"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
     <header class="hud">
-      <div class="brand"><span>REVOLVER</span><small>左輪追獵 DEMO</small></div>
+      <div class="brand"><span>REVOLVER</span><small>左輪追獵</small></div>
       <div class="hud-stats">
         <div><span>回合</span><strong id="round-number">—</strong></div>
-        <div><span>彈藥</span><strong id="ammo">6 / 6</strong></div>
-        <div><span>UP</span><strong id="up">0 層</strong></div>
+        <div class="ammo-meter"><img src="assets/cartridge.png" alt=""><strong id="ammo">6</strong><small>/ 6</small></div>
+        <div class="up-meter"><img src="assets/coin.png" alt=""><strong id="up">0</strong><small>UP</small></div>
       </div>
-      <div class="jackpot" id="jackpot">WIN UP TO 10X</div>
-      <ol class="progress" id="progress" aria-label="八回合進度"></ol>
+      <div class="jackpot"><span>FINAL PRIZE</span><strong>WIN UP TO 10X</strong></div>
+      <ol class="progress" id="progress" aria-label="八回合追獵進度"></ol>
     </header>
 
     <section class="arena" id="arena">
-      <div class="gate-number" aria-hidden="true">08</div>
+      <div class="backdrop-number" aria-hidden="true">08</div>
+      <div class="route" id="route" aria-label="追獵路線">
+        <span class="route-label">追獵目標</span>
+        <div class="route-line"><i id="route-dot"></i></div>
+        <strong id="route-title">進入封鎖區</strong>
+      </div>
+
       <section class="intro" id="intro">
-        <img src="assets/boss.webp" alt="" class="hero-art">
-        <p class="eyebrow">每一槍都是選擇</p>
-        <h1>追到第八回合<br>抽一次最高 10X</h1>
-        <p id="goal">一路撐到第 8 回合，最後抽一次獎金倍率。</p>
-        <div class="rule-strip"><span>實彈：目標死亡</span><span>空炮：玩家死亡</span></div>
+        <img src="assets/boss.webp" alt="" class="intro-boss">
+        <div class="intro-prize"><span>WIN UP TO</span><strong>10X</strong></div>
+        <h1>每一槍<br>都離獎金更近</h1>
+        <div class="intro-icons"><span><img src="assets/cartridge.png" alt="">補彈</span><span><img src="assets/coin.png" alt="">UP</span><span><img src="assets/final-cache.webp" alt="">終點</span></div>
         <button class="primary" id="start" type="button">開始追獵</button>
       </section>
 
-      <section class="play" id="play" hidden>
-        <div class="stage-copy">
-          <p class="eyebrow" id="round-title">進入封鎖區</p>
-          <h1 id="play-goal">目標：完成開槍選擇。</h1>
-          <p class="shot-rule">選一隻殭屍，開槍結束本回合。</p>
+      <section class="hunt" id="hunt" hidden>
+        <div class="enemy-stage" id="enemy-stage">
+          <div class="enemy-glow"></div>
+          <img id="enemy-art" src="assets/zombie.webp" alt="本回合目標">
+          <span class="crosshair" id="crosshair" aria-hidden="true"></span>
+          <div class="hit-flash" id="hit-flash"></div>
         </div>
-        <div class="target-zone" id="target">
-          <button class="target-card ammo-target" id="choice-ammo" type="button">
-            <span class="target-image"><img src="assets/zombie.webp" alt="補彈殭屍"></span>
-            <strong>補彈殭屍</strong>
-            <small id="ammo-value">抽 +0 / +1 / +2</small>
-            <em>穩健子彈</em>
+        <div class="choice-row" id="choice-row">
+          <button class="choice-card ammo-choice" id="choice-ammo" type="button">
+            <span class="card-icon"><img src="assets/cartridge.png" alt=""></span>
+            <span class="choice-name">補彈</span>
+            <small>轉輪抽 +0 / +1 / +2</small>
           </button>
-          <button class="target-card bonus-target" id="choice-bonus" type="button">
-            <span class="target-image"><img src="assets/boss.webp" alt="獎金殭屍"></span>
-            <strong>獎金殭屍</strong>
-            <small id="bonus-value">成功累積 1 層 UP</small>
-            <em>拚大獎</em>
+          <button class="choice-card bonus-choice" id="choice-bonus" type="button">
+            <span class="card-icon"><img src="assets/coin.png" alt=""></span>
+            <span class="choice-name">獎金 UP</span>
+            <small>累積一層，拚最後倍率</small>
           </button>
         </div>
       </section>
 
       <section class="result" id="result" hidden>
-        <img src="assets/final-cache.webp" alt="" class="result-art" loading="lazy">
-        <p class="eyebrow" id="result-title">本局結束</p>
-        <h1 id="result-message"></h1>
-        <strong class="payout" id="result-payout">$0</strong>
+        <img src="assets/final-cache.webp" alt="" class="result-cache" loading="lazy">
+        <p class="eyebrow" id="result-kicker">任務結束</p>
+        <h1 id="result-title"></h1>
+        <strong class="result-payout" id="result-payout">$0</strong>
         <p id="result-detail"></p>
         <button class="primary" id="restart" type="button">再玩一輪</button>
       </section>
 
-      <div class="console" id="fire-panel">
-        <p class="hint" id="hint" role="status"></p>
-      </div>
+      <section class="weapon-panel" id="weapon-panel" hidden>
+        <div class="weapon-label"><span>彈巢</span><strong id="shot-state">選擇目標</strong></div>
+        <div class="weapon" id="weapon">
+          <span class="cylinder-pointer" aria-hidden="true"></span>
+          <div class="cylinder" id="cylinder" aria-label="六格彈巢"></div>
+        </div>
+        <button class="fire-button" id="fire" type="button" disabled><span>FIRE</span><small>選目標後開槍</small></button>
+      </section>
+
+      <div class="hint" id="hint" role="status"></div>
+
+      <section class="loot-overlay" id="loot" aria-live="polite" hidden>
+        <div class="loot-panel">
+          <p class="eyebrow" id="loot-kicker">獎勵抽選</p>
+          <h2 id="loot-title">彈藥</h2>
+          <div class="loot-wheel" id="loot-wheel">
+            <span class="wheel-pointer" aria-hidden="true"></span>
+            <div class="loot-disc" id="loot-disc"></div>
+            <div class="wheel-core"><img id="loot-core" src="assets/cartridge.png" alt=""></div>
+          </div>
+          <strong class="loot-result" id="loot-result"></strong>
+        </div>
+      </section>
     </section>
   </main>
 </body>
