@@ -3,8 +3,8 @@ const revolverRules = (() => {
   const startAmmo = 3;
   const ammoLimit = slots;
   const finalStage = 6;
-  const bossShotLimit = 3;
-  const bossHealth = 2;
+  const bossShotLimit = 4;
+  const bossHealth = 3;
   const chestTiers = {
     bronze: { name: '銅箱', encounter: 45, ammo: [5, 65, 28, 2], coin: [55, 34, 10, 1] },
     silver: { name: '銀箱', encounter: 43, ammo: [0, 50, 43, 7], coin: [15, 25, 30, 30] },
@@ -12,13 +12,13 @@ const revolverRules = (() => {
   };
   const coinMultipliers = [1, 1.2, 1.5, 2];
   const maxBaseMultiplier = 10;
-  const finalChestWeights = [963_327, 30_000, 6_573, 100];
-  const finalChestMultipliers = [1, 1.5, 3, maxBaseMultiplier];
+  const finalChestWeights = [200_000, 200_000, 250_000, 247_700, 102_200, 100];
+  const finalChestMultipliers = [1, 1.5, 2, 3, 5, maxBaseMultiplier];
 
   const initialCylinder = () => Array.from({ length: slots }, (_, i) => i < startAmmo);
   const countAmmo = chambers => chambers.filter(Boolean).length;
   const price = bet => bet / 5;
-  const canBuy = (ammo, mode) => mode === 'vault' ? ammo < 3 : mode === 'boss' && ammo === 1;
+  const canBuy = (ammo, mode) => mode === 'vault' && ammo < 3;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
 
   function loadAmmo(chambers, amount = 1) {
@@ -69,7 +69,7 @@ const revolverRules = (() => {
   function finalWheel(bet, spent, multiplier) {
     const baseRewards = finalChestMultipliers.map(value => Math.max(bet + spent, bet * value));
     return wheelSlots(finalChestWeights, baseRewards).map(({ tier, weight, reward }) => ({
-      tier, weight, baseReward: reward, reward: Math.round(reward * multiplier),
+      tier, weight, baseMultiplier: finalChestMultipliers[tier], baseReward: reward, reward: Math.round(reward * multiplier),
     }));
   }
 

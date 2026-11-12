@@ -318,6 +318,13 @@ button:not(:disabled):active { filter: brightness(1.24); }
 }
 [data-kind='ammo'] .loot-pocket[data-count='3'] { --icon-width: 43%; --icon-margin: -6%; }
 [data-kind='ammo'] .loot-pocket:not([data-count='0']) .loot-icon { rotate: -44deg; }
+[data-kind='payout'] .loot-pocket {
+  display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; padding-block: 4px 5px;
+}
+[data-kind='payout'] .loot-icon { height: 100%; min-height: 0; }
+.loot-multiplier {
+  color: #ffdfaa; font: 900 clamp(.62rem, 3vw, .92rem)/1.1 var(--display); text-shadow: 0 2px 4px #000;
+}
 .loot-pocket.jackpot {
   --icon-width: 79%;
   border-color: #ffcf72; background: radial-gradient(circle at 50% 55%, #784517, #26120b 75%);

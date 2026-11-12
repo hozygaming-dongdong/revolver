@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=13">
-  <script defer src="rules.js?v=12"></script>
+  <link rel="stylesheet" href="style.css?v=14">
+  <script defer src="rules.js?v=14"></script>
   <script defer src="audio.js?v=4"></script>
-  <script defer src="game.js?v=13"></script>
+  <script defer src="game.js?v=14"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -44,10 +44,10 @@
         <p class="encounter-detail" id="encounter-detail"></p>
         <div class="boss-progress" id="boss-progress" role="group" aria-label="首領戰進度" hidden>
           <div class="boss-counter boss-counter-hits">
-            <span>還需命中</span><strong id="boss-hits-left">2</strong><span class="boss-marks" id="boss-hits" aria-hidden="true"></span>
+            <span>還需命中</span><strong id="boss-hits-left">3</strong><span class="boss-marks" id="boss-hits" aria-hidden="true"></span>
           </div>
           <div class="boss-counter boss-counter-shots">
-            <span>剩餘開槍</span><strong id="boss-shots-left">3</strong><span class="boss-marks" id="boss-shots" aria-hidden="true"></span>
+            <span>剩餘開槍</span><strong id="boss-shots-left">4</strong><span class="boss-marks" id="boss-shots" aria-hidden="true"></span>
           </div>
         </div>
       </div>
@@ -154,7 +154,7 @@
     <p>前五關先看兩庫的箱級，選庫後再開一槍或繞過。擊殺後，軍械庫補 0 至 3 發，金幣庫開出 1×、1.2×、1.5× 或 2×，乘上目前的累積倍率。繞過或空槍直接進下一關。</p>
     <p>兩個庫各自抽出銅箱 45%、銀箱 43%、金箱 12%。金幣金箱至少開出 1.5×。軍械庫銅箱有 5% 機率開空，銀箱至少補 1 發，金箱至少補 2 發。</p>
     <p>前五關選庫時，每發可用押注的 20% 加購，付費最多補到 3 發。</p>
-    <p>第六關最多開 3 槍，需命中 2 次。首槍前若剩 1 發，可按相同價格再加購 1 發。</p>
+    <p>第六關最多開 4 槍，需命中 3 次。進入首領戰時至少要有 3 發彈藥。</p>
     <p>打贏首領後，最終寶箱的基礎獎金乘上累積倍率。基礎獎金至少返還押注及補彈費，最高為原押注的 10×。首領戰失敗，倍率不結算，本局投入不退回。</p>
     <form method="dialog"><button class="primary">返回遊戲</button></form>
   </dialog>

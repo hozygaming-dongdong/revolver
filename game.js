@@ -17,6 +17,7 @@ const bets = [10_000, 20_000, 50_000, 100_000];
 const startingBalance = 1_000_000;
 const chestArt = type => `assets/chest-${type}.png`;
 const finalCache = 'assets/final-cache.webp';
+const cashIcons = [0, 0, 1, 2, 2, 3];
 const multiplierText = multiplier => `${multiplier.toLocaleString('zh-TW', { maximumFractionDigits: 5 })}×`;
 const ammoText = ammo => ammo ? `${ammo} 發` : '空箱';
 const vaultNames = { coin: '金幣庫', ammo: '軍械庫' };
@@ -57,10 +58,6 @@ for (const counter of bossCounters) {
 }
 text('intro-cap', multiplierText(maxBaseMultiplier));
 
-function canOfferAmmo(ammo) {
-  return canBuy(ammo, mode) && (mode !== 'boss' || shotsLeft === bossShotLimit);
-}
-
 function render() {
   const bet = bets[betIndex];
   const ammo = countAmmo(chambers);
@@ -98,7 +95,7 @@ function render() {
   ui.primary.disabled = busy || needsReset;
   ui.skip.disabled = busy;
   ui.fire.disabled = busy || ammo === 0;
-  ui.buy.hidden = !canOfferAmmo(ammo) && !(opening && canBuy(ammo, 'vault'));
+  ui.buy.hidden = !(selecting || opening) || !canBuy(ammo, 'vault');
   ui.buy.disabled = busy || balance < cost;
   ui['open-menu'].disabled = busy;
   ui['reset-assets'].disabled = busy;
@@ -155,21 +152,22 @@ function render() {
   text('buy-cost', balance < cost ? '餘額不足' : signed(-cost));
 }
 
-function finish(prize = null) {
+function finish(prize = null, reason = '') {
   const bet = bets[betIndex];
   const cleared = Boolean(prize);
   const reward = prize?.reward ?? 0;
   balance += reward;
   mode = 'result';
   ui.game.dataset.outcome = cleared ? 'clear' : 'miss';
-  text('result-title', prize?.tier === 3 ? `${multiplierText(maxBaseMultiplier * multiplier)} 大獎` : cleared ? '首領已擊倒' : '任務失敗');
+  const jackpot = prize?.baseMultiplier === maxBaseMultiplier;
+  text('result-title', jackpot ? `${multiplierText(maxBaseMultiplier * multiplier)} 大獎` : cleared ? '首領已擊倒' : '任務失敗');
   ui['result-cache'].hidden = !cleared;
   ui['result-amount'].hidden = !cleared;
   text('result-payout', signed(reward));
   text('result-net', signed(reward - bet - spentOnAmmo));
   ui['result-breakdown'].hidden = !cleared || multiplier === 1;
   if (cleared) text('result-breakdown', `${money(prize.baseReward)} × ${multiplierText(multiplier).slice(0, -1)}`);
-  hint = '';
+  hint = reason;
   render();
   if (cleared) revolverAudio.play('clear');
 }
@@ -231,17 +229,18 @@ async function spinChest(kind, type, prizes, formatReward) {
   ui.loot.dataset.kind = kind;
   face.style.transform = 'rotate(0deg)';
   face.style.setProperty('--upright', '0deg');
-  const pockets = prizes.map(({ reward, tier }, i) => {
+  const pockets = prizes.map(({ reward, tier, baseMultiplier }, i) => {
     const pocket = document.createElement('div');
     const angle = i * 2 * Math.PI / slots;
     const count = kind === 'ammo' ? reward : 1;
+    const isPayout = kind === 'payout';
     const icon = kind === 'ammo' ? (reward ? 'assets/cartridge.png' : 'assets/reward-empty.webp')
-      : `assets/reward-${kind === 'coin' ? 'coin' : 'cash'}-${tier}.webp`;
+      : isPayout ? `assets/reward-cash-${cashIcons[tier]}.webp` : `assets/reward-coin-${tier}.webp`;
     pocket.className = 'loot-pocket';
     pocket.dataset.count = String(count);
-    pocket.classList.toggle('jackpot', kind === 'payout' && tier === 3);
+    pocket.classList.toggle('jackpot', isPayout && baseMultiplier === maxBaseMultiplier);
     pocket.setAttribute('role', 'img');
-    pocket.setAttribute('aria-label', formatReward(reward));
+    pocket.setAttribute('aria-label', isPayout ? `${multiplierText(baseMultiplier)}，${formatReward(reward)}` : formatReward(reward));
     pocket.style.setProperty('--x', `${50 + 33 * Math.sin(angle)}%`);
     pocket.style.setProperty('--y', `${50 - 33 * Math.cos(angle)}%`);
     for (let j = 0; j < Math.max(1, count); j++) {
@@ -250,6 +249,12 @@ async function spinChest(kind, type, prizes, formatReward) {
       picture.src = icon;
       picture.alt = '';
       pocket.append(picture);
+    }
+    if (isPayout) {
+      const label = document.createElement('span');
+      label.className = 'loot-multiplier';
+      label.textContent = multiplierText(baseMultiplier);
+      pocket.append(label);
     }
     return pocket;
   });
@@ -376,7 +381,7 @@ async function advance(message) {
   await pause(duration / 2);
   mode = enteringBoss ? 'boss' : 'vault';
   if (enteringBoss) {
-    if (!countAmmo(chambers)) return finish();
+    if (countAmmo(chambers) < bossHealth) return finish(null, `首領戰至少需要 ${bossHealth} 發彈藥`);
     hint = '';
   }
   render();
@@ -401,7 +406,7 @@ function reload(amount) {
 
 function buyAmmo() {
   const cost = price(bets[betIndex]);
-  if (!canOfferAmmo(countAmmo(chambers)) || balance < cost) return;
+  if (!canBuy(countAmmo(chambers), mode) || balance < cost) return;
   balance -= cost;
   spentOnAmmo += cost;
   reload(1);
