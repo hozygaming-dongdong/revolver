@@ -7,10 +7,10 @@
   <meta name="description" content="REVOLVER 左輪追獵：選擇目標，押上彈藥，轉動彈巢。">
   <title>REVOLVER · 左輪追獵</title>
   <link rel="preload" as="image" href="assets/vault-bg-v2.png" fetchpriority="high">
-  <link rel="stylesheet" href="style.css?v=reforge-4">
+  <link rel="stylesheet" href="style.css?v=reforge-5">
   <script defer src="rules.js?v=reforge-2"></script>
   <script defer src="audio.js?v=demo-2"></script>
-  <script defer src="game.js?v=reforge-4"></script>
+  <script defer src="game.js?v=reforge-5"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -30,7 +30,7 @@
       <div class="route" id="route" aria-label="追獵進度"><span class="route-label">LOCKDOWN RUN</span><div class="route-line"><i id="route-dot"></i></div><strong id="route-title">準備進入封鎖區</strong></div>
 
       <section class="intro" id="intro">
-        <div class="intro-copy"><span class="eyebrow">THE LAST CHAMBER</span><h1>你追的不是殭屍<br><em>是下一次命中。</em></h1><p>選一扇門。轉一次彈巢。每一發都把你推向最後的 10X。</p></div>
+        <div class="intro-copy"><span class="eyebrow">THE LAST CHAMBER</span><h1>你追的不是殭屍<br><em>是下一次命中。</em></h1><p>選門 · 轉彈巢 · 活到 10X</p></div>
         <div class="intro-boss-wrap"><img src="assets/boss-v2.png" alt="封鎖區 Boss" class="intro-boss"></div>
         <div class="intro-legend"><span><i class="legend-dot ammo"></i>穩住彈藥</span><span><i class="legend-dot special"></i>組合特殊彈</span><span><i class="legend-dot bonus"></i>放大獎金</span></div>
         <button class="primary" id="start" type="button"><span>開始追獵</span><b>→</b></button>
@@ -38,7 +38,7 @@
 
       <section class="hunt" id="hunt" hidden>
         <section class="door-select" id="door-select">
-          <div class="objective-card"><div class="objective-icon">01</div><div><span class="eyebrow">YOUR NEXT DECISION</span><strong>先選你要帶走的東西</strong><small>資源、組合，或獎金。選定後才會看見目標。</small></div></div>
+          <div class="objective-card"><div class="objective-icon">01</div><div><span class="eyebrow">NEXT</span><strong>兩扇門，選一扇</strong><small>門後才會看見目標</small></div></div>
           <div class="choice-row" id="choice-row">
             <button class="choice-card choice-ammo" id="choice-ammo" type="button"><span class="choice-art"><img src="assets/ammo-cache.webp" alt=""><i class="choice-glint"></i><b class="door-glyph">SUPPLY</b></span><span class="choice-top"><b>DOOR 01</b><i>物資線索</i></span><strong>補給</strong><small>門後可能藏著普通彈</small></button>
             <button class="choice-card choice-bonus" id="choice-bonus" type="button"><span class="choice-art"><img src="assets/bounty-token.webp" alt=""><i class="choice-glint"></i><b class="door-glyph">BOUNTY</b></span><span class="choice-top"><b>DOOR 02</b><i>賞金線索</i></span><strong>獎金</strong><small>門後可能藏著獎金加成</small></button>
@@ -46,7 +46,7 @@
             <button class="choice-card choice-freeze" id="choice-freeze" type="button"><span class="choice-art"><img src="assets/special-ammo-sheet-v2.png" alt=""><i class="choice-glint"></i><b class="door-glyph">FROST</b></span><span class="choice-top"><b>DOOR 04</b><i>霜印線索</i></span><strong>特殊彈</strong><small>門後可能藏著冰凍彈</small></button>
             <button class="choice-card choice-bounty-ammo" id="choice-bounty" type="button"><span class="choice-art"><img src="assets/bounty-token.webp" alt=""><i class="choice-glint"></i><b class="door-glyph">GOLD</b></span><span class="choice-top"><b>DOOR 05</b><i>金殼線索</i></span><strong>特殊彈</strong><small>門後可能藏著賞金彈</small></button>
           </div>
-          <p class="decision-note"><span class="decision-pulse"></span><b>你的選擇會決定下一次抽選</b><span>選門 → 進入目標區 → 轉彈巢</span></p>
+          <p class="decision-note"><span class="decision-pulse"></span><b>選門</b><i>→</i><span>看目標</span><i>→</i><span>FIRE</span></p>
         </section>
 
         <section class="fight-stage" id="fight-stage" hidden>
@@ -59,11 +59,11 @@
 
       <section class="result" id="result" hidden><span class="result-seal">RUN COMPLETE</span><img src="assets/bounty-token.webp" alt="獎金" class="result-token"><p class="eyebrow" id="result-kicker">任務結束</p><h1 id="result-title"></h1><strong class="result-payout" id="result-payout">$0</strong><p id="result-detail"></p><button class="primary" id="restart" type="button"><span>再玩一輪</span><b>↻</b></button></section>
 
-      <section class="weapon-panel" id="weapon-panel" hidden><div class="weapon-context"><span class="eyebrow">THE CHAMBER DECIDES</span><strong id="shot-state">選擇目標</strong><small id="weapon-help">六格中，只有你看不見下一格。</small></div><div class="weapon-wrap"><div class="weapon" id="weapon"><span class="cylinder-pointer" aria-hidden="true"></span><div class="cylinder" id="cylinder" aria-label="六格彈巢"></div></div><div class="cylinder-caption"><span>6 CHAMBERS</span><b>RANDOM LOAD</b></div></div><button class="fire-button" id="fire" type="button" disabled><span>FIRE</span><small>選目標後開槍</small></button></section>
+      <section class="weapon-panel" id="weapon-panel" hidden><div class="weapon-context"><span class="eyebrow">彈巢</span><strong id="shot-state">選擇目標</strong><small id="weapon-help">轉動後開槍</small></div><div class="weapon-wrap"><div class="weapon" id="weapon"><span class="cylinder-pointer" aria-hidden="true"></span><div class="cylinder" id="cylinder" aria-label="六格彈巢"></div></div><div class="cylinder-caption"><span>6 CHAMBERS</span><b>RANDOM</b></div></div><button class="fire-button" id="fire" type="button" disabled><span>FIRE</span><small>轉彈巢</small></button></section>
 
       <div class="hint" id="hint" role="status"></div>
 
-      <section class="loot-overlay" id="loot" aria-live="polite" hidden><div class="loot-panel"><div class="loot-eyebrow"><span class="eyebrow" id="loot-kicker">REWARD DRAW</span><span id="loot-round">NOW</span></div><h2 id="loot-title">戰利品抽選</h2><div class="loot-wheel" id="loot-wheel"><span class="wheel-pointer" aria-hidden="true"></span><div class="loot-disc" id="loot-disc"></div><div class="wheel-core"><img id="loot-core" src="assets/cylinder-v2.png" alt=""></div></div><strong class="loot-result" id="loot-result"></strong><small class="loot-sub">結果會立刻加入你的配置</small></div></section>
+      <section class="loot-overlay" id="loot" aria-live="polite" hidden><div class="loot-panel"><div class="loot-eyebrow"><span class="eyebrow" id="loot-kicker">REWARD DRAW</span><span id="loot-round">NOW</span></div><h2 id="loot-title">戰利品抽選</h2><div class="loot-wheel" id="loot-wheel"><span class="wheel-pointer" aria-hidden="true"></span><div class="loot-disc" id="loot-disc"></div><div class="wheel-core"><img id="loot-core" src="assets/cylinder-v2.png" alt=""></div></div><strong class="loot-result" id="loot-result"></strong><small class="loot-sub">ADDED</small></div></section>
     </section>
   </main>
 </body>

@@ -9,11 +9,11 @@ const baseReward = 100;
 const targetOptions = ['ammo', 'bonus', 'crit', 'freeze', 'bounty'];
 const targetWeights = { ammo: 42, bonus: 24, crit: 13, freeze: 12, bounty: 9 };
 const targetData = {
-  ammo: { name: '補給殭屍', art: 'assets/zombie-supply-v2.png', icon: 'assets/zombie-supply-v2.png', rule: '命中後抽普通彈', hint: '你在追逐彈藥。命中後會轉出 +1、+2 或 +3。', tag: 'SUPPLY TARGET' },
-  bonus: { name: '賞金殭屍', art: 'assets/zombie-bounty-v2.png', icon: 'assets/zombie-bounty-v2.png', rule: '命中後抽獎金', hint: '你在追逐獎金。命中後轉出 +0.2X、+0.5X 或 +1.0X。', tag: 'BOUNTY TARGET' },
-  crit: { name: '爆擊彈殭屍', art: 'assets/zombie-special-v2.png', icon: 'assets/special-ammo-sheet-v2.png', rule: '命中後取得爆擊彈', hint: '你在追逐爆擊組合。命中後取得 1～3 顆爆擊彈。', tag: 'CRIT TARGET' },
-  freeze: { name: '冰凍彈殭屍', art: 'assets/zombie-special-v2.png', icon: 'assets/special-ammo-sheet-v2.png', rule: '命中後取得冰凍彈', hint: '你在追逐容錯空間。命中後取得 1～3 顆冰凍彈。', tag: 'FREEZE TARGET' },
-  bounty: { name: '賞金彈殭屍', art: 'assets/zombie-bounty-v2.png', icon: 'assets/special-ammo-sheet-v2.png', rule: '命中後取得賞金彈', hint: '你在追逐 Boss 賞金組合。命中後取得 1～3 顆賞金彈。', tag: 'GOLD SHELL TARGET' },
+  ammo: { name: '補給殭屍', art: 'assets/zombie-supply-v2.png', icon: 'assets/zombie-supply-v2.png', rule: '普通彈 +1 / +2 / +3', hint: '補給 · 普通彈', tag: 'SUPPLY TARGET' },
+  bonus: { name: '賞金殭屍', art: 'assets/zombie-bounty-v2.png', icon: 'assets/zombie-bounty-v2.png', rule: '獎金 +0.2 / +0.5 / +1.0X', hint: '賞金 · 加成輪盤', tag: 'BOUNTY TARGET' },
+  crit: { name: '爆擊彈殭屍', art: 'assets/zombie-special-v2.png', icon: 'assets/special-ammo-sheet-v2.png', rule: '爆擊彈 ×1 / ×2 / ×3', hint: '特殊彈 · 爆擊', tag: 'CRIT TARGET' },
+  freeze: { name: '冰凍彈殭屍', art: 'assets/zombie-special-v2.png', icon: 'assets/special-ammo-sheet-v2.png', rule: '冰凍彈 ×1 / ×2 / ×3', hint: '特殊彈 · 冰凍', tag: 'FREEZE TARGET' },
+  bounty: { name: '賞金彈殭屍', art: 'assets/zombie-bounty-v2.png', icon: 'assets/special-ammo-sheet-v2.png', rule: '賞金彈 ×1 / ×2 / ×3', hint: '特殊彈 · 賞金', tag: 'GOLD SHELL TARGET' },
   boss: { name: '封鎖區 Boss', art: 'assets/boss-v2.png', icon: 'assets/bounty-token.webp', rule: '3 HP · 3 回合', hint: '最後一關。每次開槍前，都要決定是否押上一顆特殊彈。', tag: 'FINAL CHAMBER' },
 };
 
@@ -132,13 +132,13 @@ function reset() {
 }
 
 function start() {
-  revolverAudio.unlock(); revolverAudio.startMusic(); mode = 'doors'; round = 1; selected = null; chambers = initialCylinder(); options = chooseOptions(); pocket = { crit: 0, freeze: 0, bounty: 0 }; bountyBonus = 0; setHint('兩扇門，選一個你願意押上的方向。'); render();
+  revolverAudio.unlock(); revolverAudio.startMusic(); mode = 'doors'; round = 1; selected = null; chambers = initialCylinder(); options = chooseOptions(); pocket = { crit: 0, freeze: 0, bounty: 0 }; bountyBonus = 0; setHint('兩扇門 · 選一個方向'); render();
 }
 
 async function selectChoice(choice) {
   if (mode !== 'doors' || !options.includes(choice)) return;
   selected = choice; const target = targetData[choice]; ui['door-select'].dataset.state = 'opening'; setHint(target.hint); mode = 'entering'; render(); await pause(420);
-  ui['enemy-stage'].dataset.target = choice; ui['enemy-art'].src = target.art; ui['enemy-art'].alt = target.name; ui['target-icon'].src = target.icon; text('target-name', target.name); text('encounter-rule', target.rule); text('enemy-tag', target.tag); text('target-index', String(round).padStart(2, '0')); text('encounter-kicker', 'TARGET ACQUIRED'); mode = 'fight'; ui['door-select'].dataset.state = ''; setHint('目標出現。轉動彈巢，結果會決定你是否拿到它的獎勵。'); render();
+  ui['enemy-stage'].dataset.target = choice; ui['enemy-art'].src = target.art; ui['enemy-art'].alt = target.name; ui['target-icon'].src = target.icon; text('target-name', target.name); text('encounter-rule', target.rule); text('enemy-tag', target.tag); text('target-index', String(round).padStart(2, '0')); text('encounter-kicker', 'TARGET ACQUIRED'); mode = 'fight'; ui['door-select'].dataset.state = ''; setHint('目標鎖定 · FIRE'); render();
 }
 
 function enterBoss() {
@@ -184,11 +184,11 @@ async function fire() {
   if (!type) { revolverAudio.play('empty'); ui['enemy-stage'].dataset.state = 'miss'; setHint(isBoss ? '空炮。Boss 發動攻擊。' : '空炮。追獵中止。', 'loss'); await pause(650); finish(false, 0, 0, isBoss ? 'Boss 攻擊' : '空炮'); return; }
   revolverAudio.play('fire'); ui['enemy-stage'].dataset.state = 'hit';
   if (!isBoss) {
-    setHint('命中。目標倒下，開始抽取獎勵。', 'success'); await pause(430);
+    setHint('命中 · 抽取戰利品', 'success'); await pause(430);
     if (choice === 'ammo') { const gained = await spinReward('ammo'); for (let index = 0; index < gained; index++) loadRound(chambers, 'normal'); }
     else if (choice === 'bonus') bountyBonus = Number((bountyBonus + await spinReward('bounty')).toFixed(1));
     else { const gained = await spinReward('special', choice); pocket[choice] += gained; }
-    round++; selected = null; if (round > prepRounds) enterBoss(); else { options = chooseOptions(); mode = 'doors'; setHint('下一回合：看彈藥、口袋與獎金，選下一個目標。'); render(); } return;
+    round++; selected = null; if (round > prepRounds) enterBoss(); else { options = chooseOptions(); mode = 'doors'; setHint('下一回合 · 選門'); render(); } return;
   }
   const counts = comboCounts(); let damage = type === 'crit' ? 2 : 1; let reward = 0;
   if (type === 'crit' && counts.crit >= 2 && bossCritFired > 0) damage++;
