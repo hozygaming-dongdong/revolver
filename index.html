@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
   <script defer src="rules.js?v=14"></script>
-  <script defer src="audio.js?v=4"></script>
-  <script defer src="game.js?v=14"></script>
+  <script defer src="audio.js?v=5"></script>
+  <script defer src="game.js?v=15"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -94,7 +94,10 @@
           <div class="cylinder" id="cylinder"></div>
         </div>
         <div class="ammo-controls">
-          <p class="ammo-readout">彈藥 <strong id="ammo">3 / 6</strong></p>
+          <p class="ammo-readout">
+            <span>彈藥 <strong id="ammo">3 / 6</strong></span>
+            <span class="boss-ammo" id="boss-ammo" hidden><span id="boss-ammo-label"></span><strong id="boss-ammo-status"></strong></span>
+          </p>
           <button class="buy-ammo" id="buy" type="button" hidden>加購 1 發 <small id="buy-cost"></small></button>
         </div>
         <div class="decisions" id="decisions" role="group" aria-label="本關行動" hidden>

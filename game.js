@@ -57,6 +57,7 @@ for (const counter of bossCounters) {
   ui[counter.marks].append(...counter.cells);
 }
 text('intro-cap', multiplierText(maxBaseMultiplier));
+text('boss-ammo-label', `首領門檻 ${bossHealth} 發`);
 
 function render() {
   const bet = bets[betIndex];
@@ -67,7 +68,8 @@ function render() {
   const looting = mode === 'loot';
   const transitioning = mode === 'transition';
   const opening = mode === 'entering';
-  const busy = spinning || looting || transitioning || opening;
+  const attacking = mode === 'boss-attack';
+  const busy = spinning || looting || transitioning || opening || attacking;
   const playing = !ready && !finished;
   const atBoss = stage === finalStage;
   const selecting = mode === 'vault';
@@ -77,10 +79,14 @@ function render() {
   const target = inVault ? targets[stage - 1][selectedVault] : null;
   const needsReset = ready && balance < bets[0];
   const cost = price(bet);
+  const ammoShortage = bossHealth - ammo;
+  const warnCoinShot = mode === 'encounter' && stage === finalStage - 1 && selectedVault === 'coin' && ammoShortage === 0;
   ui.game.dataset.mode = mode;
   ui.arena.dataset.scene = ready ? 'intro' : finished ? 'settlement' : choosing ? 'vault' : 'fight';
   ui.arena.dataset.target = fighting && atBoss ? 'boss' : target ?? '';
   ui.arena.dataset.vault = inVault ? selectedVault : '';
+  ui.arena.toggleAttribute('data-boss-danger', fighting && atBoss && !attacking && shotsLeft === 1 && hitsLeft === 1);
+  ui['boss-enemy'].style.setProperty('--boss-steps', bossShotLimit - shotsLeft - Number(hitsLeft === 0));
   ui.enemy.hidden = !fighting || atBoss;
   ui['boss-enemy'].hidden = !fighting || !atBoss;
   ui.weapon.hidden = !fighting;
@@ -105,7 +111,13 @@ function render() {
   text('balance', money(balance));
   text('bet', money(bet));
   text('ammo', `${ammo} / ${slots}`);
-  text('hint', needsReset ? '餘額不足，請從選單重設資產' : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足` : hint);
+  ui['boss-ammo'].hidden = !playing || atBoss;
+  ui['boss-ammo'].classList.toggle('short', ammoShortage > 0);
+  text('boss-ammo-status', ammoShortage > 0 ? `還差 ${ammoShortage} 發` : '已達門檻');
+  ui.hint.classList.toggle('warning', warnCoinShot);
+  text('hint', needsReset ? '餘額不足，請從選單重設資產'
+    : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足`
+    : warnCoinShot ? `命中後剩 ${ammo - 1} 發，低於首領門檻` : hint);
   const resetAmount = money(startingBalance);
   text('reset-note', busy ? '等待演出結束' : playing ? `結束本輪 · ${resetAmount}` : resetAmount);
   text('gate-number', String(stage).padStart(2, '0'));
@@ -170,6 +182,16 @@ function finish(prize = null, reason = '') {
   hint = reason;
   render();
   if (cleared) revolverAudio.play('clear');
+}
+
+async function bossAttack(reason) {
+  mode = 'boss-attack';
+  hint = '首領撲向你';
+  render();
+  revolverAudio.play('bossAttack');
+  await pause(reducedMotion.matches ? 360 : 520);
+  finish(null, reason);
+  ui.primary.focus({ preventScroll: true });
 }
 
 function animateShot() {
@@ -289,26 +311,31 @@ async function fire() {
   ui.arena.dataset.shot = lethal ? 'kill' : outcome.hit ? 'hit' : 'miss';
   revolverAudio.play(outcome.hit ? 'fire' : 'empty');
   hint = lethal ? '命中 · 目標擊倒' : outcome.hit ? '命中首領' : '空槍 · 彈藥保留';
+  if (atBoss) {
+    shotsLeft--;
+    if (outcome.hit) hitsLeft--;
+  }
   render();
   await wait(620);
   chambers = outcome.chambers;
   chamberCells[selected].classList.remove('selected');
   delete ui.weapon.dataset.spin;
-  delete ui.arena.dataset.shot;
   if (atBoss) {
-    shotsLeft--;
-    if (outcome.hit) hitsLeft--;
     if (lethal) {
       const prize = await spinChest('payout', null, finalWheel(bets[betIndex], spentOnAmmo, multiplier), money);
       text('loot-result', `獲得 ${money(prize.reward)}`);
       await pause(1050);
+      delete ui.arena.dataset.shot;
       return finish(prize);
     }
-    if (!shotsLeft || countAmmo(chambers) < hitsLeft || shotsLeft < hitsLeft) return finish();
+    delete ui.arena.dataset.shot;
+    if (shotsLeft < hitsLeft) return bossAttack('剩餘開槍次數不足以擊倒首領');
+    if (countAmmo(chambers) < hitsLeft) return bossAttack('彈藥不足以擊倒首領');
     mode = 'boss';
     render();
     return;
   }
+  delete ui.arena.dataset.shot;
   if (!outcome.hit) return advance(hint);
   const target = targets[stage - 1][selectedVault];
   let message;
@@ -381,7 +408,7 @@ async function advance(message) {
   await pause(duration / 2);
   mode = enteringBoss ? 'boss' : 'vault';
   if (enteringBoss) {
-    if (countAmmo(chambers) < bossHealth) return finish(null, `首領戰至少需要 ${bossHealth} 發彈藥`);
+    if (countAmmo(chambers) < bossHealth) return bossAttack(`首領戰至少需要 ${bossHealth} 發彈藥`);
     hint = '';
   }
   render();
@@ -454,7 +481,7 @@ ui.music.addEventListener('click', () => {
   text('music-state', enabled ? '開' : '關');
 });
 ui['reset-assets'].addEventListener('click', () => {
-  if (['spinning', 'loot', 'transition', 'entering'].includes(mode)) return;
+  if (ui['reset-assets'].disabled) return;
   balance = startingBalance;
   ui.menu.close();
   resetRound();
