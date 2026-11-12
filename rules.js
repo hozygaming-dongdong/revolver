@@ -6,14 +6,22 @@ const revolverRules = (() => {
   const startAmmo = 6;
   const bossMaxAmmo = 5;
   const ammoDraw = [
-    { value: 0, weight: 10 },
-    { value: 1, weight: 55 },
+    { value: 1, weight: 50 },
     { value: 2, weight: 35 },
+    { value: 3, weight: 15 },
   ];
   const specialDraw = [
-    { type: 'crit', weight: 34 },
-    { type: 'freeze', weight: 33 },
-    { type: 'bounty', weight: 33 },
+    { type: 'crit', amount: 1, weight: 12 },
+    { type: 'crit', amount: 2, weight: 8 },
+    { type: 'crit', amount: 3, weight: 4 },
+    { type: 'freeze', amount: 1, weight: 12 },
+    { type: 'freeze', amount: 2, weight: 8 },
+    { type: 'freeze', amount: 3, weight: 4 },
+    { type: 'bounty', amount: 1, weight: 12 },
+    { type: 'bounty', amount: 2, weight: 8 },
+    { type: 'bounty', amount: 3, weight: 4 },
+    { type: 'normal', amount: 1, weight: 18 },
+    { type: 'normal', amount: 2, weight: 10 },
   ];
   const finalDraw = [
     { multiplier: 1, weight: 40 },
@@ -37,7 +45,7 @@ const revolverRules = (() => {
     return true;
   };
   const drawAmmo = (random = Math.random) => ammoDraw[weightedIndex(ammoDraw, random)].value;
-  const drawSpecial = (random = Math.random) => specialDraw[weightedIndex(specialDraw, random)].type;
+  const drawSpecial = (random = Math.random) => specialDraw[weightedIndex(specialDraw, random)];
   const drawFinalMultiplier = (random = Math.random) => finalDraw[weightedIndex(finalDraw, random)].multiplier;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
   return { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, ammoDraw, specialDraw, finalDraw, initialCylinder, countAmmo, loadRound, drawAmmo, drawSpecial, drawFinalMultiplier, chamberIndex };

@@ -266,7 +266,7 @@ function spinDial(selectedIndex, duration = 900) {
 }
 
 function buildWheel(kind) {
-  const values = kind === 'ammo' ? [0, 1, 2] : kind === 'special' ? ['爆擊', '冰凍', '賞金'] : kind === 'bounty' ? ['賞金彈'] : finalDraw.map(({ multiplier }) => multiplier);
+  const values = kind === 'ammo' ? ammoDraw.map(({ value }) => value) : kind === 'special' ? specialDraw.map(({ type, amount }) => type === 'normal' ? '+' + amount + ' 普通彈' : ({ crit: '爆擊', freeze: '冰凍', bounty: '賞金' }[type]) + ' ×' + amount) : kind === 'bounty' ? ['賞金彈'] : finalDraw.map(({ multiplier }) => multiplier);
   ui['loot-disc'].replaceChildren(...values.map((value, index) => {
     const pocket = document.createElement('span');
     pocket.className = 'wheel-pocket';
@@ -288,9 +288,9 @@ async function spinReward(kind) {
   const list = lists[kind];
   const index = pickWeighted(list);
   const item = list[index];
-  const value = kind === 'ammo' ? item.value : kind === 'special' ? item.type : kind === 'bounty' ? 'bounty' : item.multiplier;
+  const value = kind === 'ammo' ? item.value : kind === 'special' ? item : kind === 'bounty' ? 'bounty' : item.multiplier;
   buildWheel(kind);
-  ui['loot-core'].src = kind === 'ammo' ? 'assets/ammo-cache.webp' : 'assets/bounty-token.webp';
+  ui['loot-core'].src = kind === 'ammo' ? 'assets/ammo-cache.webp' : kind === 'special' ? 'assets/cylinder-ui.webp' : 'assets/bounty-token.webp';
   text('loot-kicker', kind === 'final' ? '最終獎金抽選' : '戰利品抽選');
   text('loot-title', kind === 'ammo' ? '轉出普通彈' : kind === 'special' ? '取得特殊彈' : kind === 'bounty' ? '取得賞金彈' : '最後一槍，抽出倍率');
   text('loot-result', '抽選中…');
@@ -298,13 +298,14 @@ async function spinReward(kind) {
   mode = 'loot';
   render();
   await pause(260);
-  const count = kind === 'ammo' ? 3 : kind === 'special' ? 3 : kind === 'bounty' ? 1 : finalDraw.length;
+  const count = kind === 'ammo' ? ammoDraw.length : kind === 'special' ? specialDraw.length : kind === 'bounty' ? 1 : finalDraw.length;
   const step = 360 / count;
   const end = 1440 + (360 - index * step);
   const animation = ui['loot-disc'].animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + end + 'deg)' }], { duration: reducedMotion.matches ? 0 : 1100, easing: 'cubic-bezier(.17,.62,.24,1)' });
   await animation.finished;
   ui['loot-disc'].style.transform = 'rotate(' + end + 'deg)';
-  text('loot-result', kind === 'ammo' ? '補充 ' + value + ' 發' : kind === 'special' ? '取得 ' + ({ crit: '爆擊彈', freeze: '冰凍彈', bounty: '賞金彈' }[value]) : kind === 'bounty' ? '取得 賞金彈' : '抽到 ' + multiplierText(value));
+  const specialText = value.type === 'normal' ? '補充普通彈 ' + value.amount + ' 發' : '取得 ' + ({ crit: '爆擊彈', freeze: '冰凍彈', bounty: '賞金彈' }[value.type]) + ' ×' + value.amount;
+  text('loot-result', kind === 'ammo' ? '補充 ' + value + ' 發' : kind === 'special' ? specialText : kind === 'bounty' ? '取得 賞金彈' : '抽到 ' + multiplierText(value));
   revolverAudio.play('lock');
   await pause(650);
   ui.loot.hidden = true;
@@ -350,7 +351,9 @@ async function fire() {
       const gained = await spinReward('ammo');
       for (let i = 0; i < gained; i++) loadRound(chambers, 'normal');
     } else if (choice === 'special') {
-      pocket[await spinReward('special')]++;
+      const gained = await spinReward('special');
+      if (gained.type === 'normal') for (let i = 0; i < gained.amount; i++) loadRound(chambers, 'normal');
+      else pocket[gained.type] += gained.amount;
     } else {
       bountyBonus = Number((bountyBonus + .2).toFixed(1));
     }
