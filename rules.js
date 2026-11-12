@@ -2,17 +2,23 @@ const revolverRules = (() => {
   const slots = 6;
   const rounds = 8;
   const prepRounds = 5;
+  const bossRounds = 3;
   const startAmmo = 6;
+  const bossMaxAmmo = 5;
   const ammoDraw = [
-    { value: 0, weight: 5 },
+    { value: 0, weight: 10 },
     { value: 1, weight: 55 },
-    { value: 2, weight: 40 },
+    { value: 2, weight: 35 },
+  ];
+  const specialDraw = [
+    { type: 'crit', weight: 50 },
+    { type: 'freeze', weight: 50 },
   ];
   const finalDraw = [
-    { multiplier: 1.2, weight: 40 },
-    { multiplier: 1.5, weight: 30 },
-    { multiplier: 2, weight: 16 },
-    { multiplier: 3, weight: 10 },
+    { multiplier: 1, weight: 40 },
+    { multiplier: 2, weight: 30 },
+    { multiplier: 3, weight: 16 },
+    { multiplier: 5, weight: 10 },
     { multiplier: 10, weight: 4 },
   ];
   const weightedIndex = (items, random = Math.random) => {
@@ -20,25 +26,20 @@ const revolverRules = (() => {
     let roll = random() * total;
     return items.findIndex(item => (roll -= item.weight) < 0);
   };
-  const initialCylinder = () => Array.from({ length: slots }, () => true);
+  const initialCylinder = () => Array.from({ length: slots }, () => 'normal');
   const countAmmo = chambers => chambers.filter(Boolean).length;
-  const loadAmmo = (chambers, amount) => {
-    const next = [...chambers];
-    for (let i = 0; i < next.length && amount > 0; i++) {
-      if (next[i]) continue;
-      next[i] = true;
-      amount--;
-    }
-    return next;
+  const loadRound = (chambers, type, limit = slots) => {
+    if (countAmmo(chambers) >= limit) return false;
+    const index = chambers.findIndex(value => !value);
+    if (index < 0) return false;
+    chambers[index] = type;
+    return true;
   };
   const drawAmmo = (random = Math.random) => ammoDraw[weightedIndex(ammoDraw, random)].value;
-  const drawFinalMultiplier = (up, random = Math.random) => {
-    const index = weightedIndex(finalDraw, random);
-    const finalIndex = Math.min(finalDraw.length - 1, index + up);
-    return { ...finalDraw[finalIndex], baseMultiplier: finalDraw[index].multiplier };
-  };
+  const drawSpecial = (random = Math.random) => specialDraw[weightedIndex(specialDraw, random)].type;
+  const drawFinalMultiplier = (random = Math.random) => finalDraw[weightedIndex(finalDraw, random)].multiplier;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
-  return { slots, rounds, prepRounds, startAmmo, ammoDraw, finalDraw, initialCylinder, countAmmo, loadAmmo, drawAmmo, drawFinalMultiplier, chamberIndex };
+  return { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, ammoDraw, specialDraw, finalDraw, initialCylinder, countAmmo, loadRound, drawAmmo, drawSpecial, drawFinalMultiplier, chamberIndex };
 })();
 
 if (typeof module !== 'undefined') module.exports = revolverRules;

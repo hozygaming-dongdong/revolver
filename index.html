@@ -7,10 +7,10 @@
   <meta name="description" content="REVOLVER 左輪追獵：選目標、轉彈巢、一路拚到最高 10X。">
   <title>REVOLVER · 左輪追獵</title>
   <link rel="preload" as="image" href="assets/corridor.webp" fetchpriority="high">
-  <link rel="stylesheet" href="style.css?v=demo-4">
-  <script defer src="rules.js?v=demo-2"></script>
+  <link rel="stylesheet" href="style.css?v=rules-demo-1">
+  <script defer src="rules.js?v=rules-demo-1"></script>
   <script defer src="audio.js?v=demo-2"></script>
-  <script defer src="game.js?v=demo-2"></script>
+  <script defer src="game.js?v=rules-demo-1"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -19,7 +19,7 @@
       <div class="hud-stats">
         <div><span>回合</span><strong id="round-number">—</strong></div>
         <div class="ammo-meter"><img src="assets/cartridge.png" alt=""><strong id="ammo">6</strong><small>/ 6</small></div>
-        <div class="up-meter"><img src="assets/coin.png" alt=""><strong id="up">0</strong><small>UP</small></div>
+        <div class="up-meter"><img src="assets/bounty-token.webp" alt=""><strong id="up">0</strong><small>口袋</small></div>
       </div>
       <div class="jackpot"><span>FINAL PRIZE</span><strong>WIN UP TO 10X</strong></div>
       <ol class="progress" id="progress" aria-label="八回合追獵進度"></ol>
@@ -37,7 +37,7 @@
         <img src="assets/boss.webp" alt="" class="intro-boss">
         <div class="intro-prize"><span>WIN UP TO</span><strong>10X</strong></div>
         <h1>每一槍<br>都離獎金更近</h1>
-        <div class="intro-icons"><span><img src="assets/ammo-cache.webp" alt="">補彈</span><span><img src="assets/bounty-token.webp" alt="">UP</span><span><img src="assets/final-cache.webp" alt="">終點</span></div>
+        <div class="intro-icons"><span><img src="assets/ammo-cache.webp" alt="">補給</span><span><img src="assets/bounty-token.webp" alt="">賞金</span><span><img src="assets/final-cache.webp" alt="">終點</span></div>
         <button class="primary" id="start" type="button">開始追獵</button>
       </section>
 
@@ -47,20 +47,35 @@
           <div class="door-row" id="choice-row">
             <button class="choice-card ammo-choice" id="choice-ammo" type="button">
               <span class="door-scene"><span class="door-emblem"><img src="assets/ammo-cache.webp" alt=""></span><span class="door-mark">SUPPLY</span><span class="door-handle"></span></span>
-              <span class="choice-name"><img src="assets/ammo-cache.webp" alt="">補彈路線</span>
-              <small>進門後擊殺目標<br>抽取 +0 / +1 / +2 發</small>
+              <span class="choice-name"><img src="assets/ammo-cache.webp" alt="">補給殭屍</span>
+              <small>擊殺後抽普通彈<br>+0 / +1 / +2</small>
+            </button>
+            <button class="choice-card special-choice" id="choice-special" type="button">
+              <span class="door-scene"><span class="door-emblem"><img src="assets/cylinder-ui.webp" alt=""></span><span class="door-mark">SPECIAL</span><span class="door-handle"></span></span>
+              <span class="choice-name"><img src="assets/cylinder-ui.webp" alt="">特殊彈殭屍</span>
+              <small>命中後取得<br>爆擊彈或冰凍彈</small>
             </button>
             <button class="choice-card bonus-choice" id="choice-bonus" type="button">
               <span class="door-scene"><span class="door-emblem"><img src="assets/bounty-token.webp" alt=""></span><span class="door-mark">BOUNTY</span><span class="door-handle"></span></span>
-              <span class="choice-name"><img src="assets/bounty-token.webp" alt="">獎金路線</span>
-              <small>進門後擊殺目標<br>累積一層 UP</small>
+              <span class="choice-name"><img src="assets/bounty-token.webp" alt="">賞金殭屍</span>
+              <small>擊殺後取得賞金彈<br>增加最終獎金</small>
             </button>
           </div>
           <p class="state-help"><img src="assets/cylinder-ui.webp" alt="">先選門，再進入決鬥</p>
         </section>
 
         <section class="fight-stage" id="fight-stage" hidden>
-          <div class="encounter-brief"><img id="target-icon" src="assets/ammo-cache.webp" alt=""><div><span class="eyebrow">已進入目標區</span><strong id="target-name">補彈路線</strong></div><span class="encounter-arrow">→</span><span class="encounter-action">擊殺目標</span></div>
+          <div class="encounter-brief"><img id="target-icon" src="assets/ammo-cache.webp" alt=""><div><span class="eyebrow">已進入目標區</span><strong id="target-name">補給殭屍</strong></div><span class="encounter-arrow">→</span><span class="encounter-action">擊殺目標</span></div>
+          <div class="boss-status" id="boss-status" hidden><span>Boss HP <b id="boss-hp">3</b> / 3</span><span>攻擊倒數 <b id="boss-clock">3</b></span></div>
+          <div class="boss-load" id="boss-load" hidden>
+            <span class="load-title">開槍前裝填一顆特殊彈</span>
+            <div class="load-options">
+              <button id="load-crit" type="button"><img src="assets/cartridge.png" alt=""><b>爆擊 <small id="load-crit-count">0</small></b></button>
+              <button id="load-freeze" type="button"><img src="assets/cartridge.png" alt=""><b>冰凍 <small id="load-freeze-count">0</small></b></button>
+              <button id="load-bounty" type="button"><img src="assets/bounty-token.webp" alt=""><b>賞金 <small id="load-bounty-count">0</small></b></button>
+              <button class="load-skip" id="load-skip" type="button">不裝填<br><small>直接開槍</small></button>
+            </div>
+          </div>
           <div class="enemy-stage" id="enemy-stage">
             <div class="enemy-glow"></div>
             <img id="enemy-art" src="assets/boss-runner.webp" alt="本回合目標">
