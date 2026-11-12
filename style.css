@@ -2,5 +2,6 @@
 :where([hidden]){display:none!important}
 .encounter-head>img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 4px 5px #000)}
 .game{height:100svh;min-height:100svh}.arena{height:calc(100svh - 150px);min-height:0;overflow:hidden}
+.game{display:flex;flex-direction:column}.arena{flex:1;height:auto}.intro,.result{height:100%;min-height:0}
 @media(max-height:760px){.intro{min-height:calc(100svh - 205px);padding-top:18px}.intro-boss-wrap{inset:3% 0 20%}.intro h1{font-size:29px}.intro-legend{margin:12px 0}.enemy-stage{height:30vh;min-height:230px}.weapon{width:48vw}.weapon-panel{padding-top:7px}.choice-card{min-height:155px}.choice-art{height:82px}}
 .game[data-mode="fight"] .enemy-stage,.game[data-mode="spinning"] .enemy-stage{height:27vh;min-height:220px;max-height:285px}.game[data-mode="fight"] .weapon,.game[data-mode="spinning"] .weapon{width:min(48vw,220px)}.game[data-mode="boss-load"] .enemy-stage,.game[data-mode="boss"] .enemy-stage{height:21vh;min-height:170px;max-height:225px}.game[data-mode="boss-load"] .weapon,.game[data-mode="boss"] .weapon{width:min(43vw,190px)}.game[data-mode="boss-load"] .weapon-panel,.game[data-mode="boss"] .weapon-panel{padding-top:6px}.game[data-mode="boss-load"] .weapon-context small,.game[data-mode="boss"] .weapon-context small{display:none}
