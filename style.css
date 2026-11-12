@@ -13,7 +13,7 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; min-height: 100svh; background: #090605; }
-body::before { content: ''; position: fixed; inset: 0; background: linear-gradient(#120a08a8, #0b0706d9), url('assets/corridor.jpg') center / cover; filter: blur(7px); transform: scale(1.04); }
+body::before { content: ''; position: fixed; inset: 0; background: linear-gradient(#120a08a8, #0b0706d9), url('assets/corridor.webp') center / cover; filter: blur(7px); transform: scale(1.04); }
 button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
 button:disabled { cursor: default; opacity: .42; }
 button:focus-visible { outline: 2px solid #fff1c8; outline-offset: 3px; }
@@ -33,7 +33,7 @@ button:focus-visible { outline: 2px solid #fff1c8; outline-offset: 3px; }
 .progress .current { color: #fff0c9; border-color: var(--gold); box-shadow: 0 0 10px #e5a24855; }
 .progress .cleared { color: #e9b968; background: #49301d; }
 
-.arena { position: relative; min-height: calc(100svh - 185px); padding: 24px 16px 26px; background: linear-gradient(#140a08a8, #100806d9), url('assets/corridor.jpg') center / cover; }
+.arena { position: relative; min-height: calc(100svh - 185px); padding: 24px 16px 26px; background: linear-gradient(#140a08a8, #100806d9), url('assets/corridor.webp') center / cover; }
 .gate-number { position: absolute; right: 18px; top: 12px; color: #d0bba0; opacity: .25; font-size: 5rem; font-weight: 900; }
 .intro, .play, .result { position: relative; z-index: 1; display: grid; justify-items: center; align-content: center; min-height: 65svh; text-align: center; }
 .hero-art { width: min(48vw, 220px); height: 230px; object-fit: contain; filter: drop-shadow(0 8px 14px #000); }
