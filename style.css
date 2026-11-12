@@ -51,7 +51,7 @@ button:focus-visible { outline: 2px solid #fff1c8; outline-offset: 3px; }
 .intro h1 { margin: 12px 0 0; font-size: clamp(1.55rem, 8vw, 2.4rem); line-height: 1.15; }
 .intro-icons { display: flex; gap: 15px; margin-top: 18px; color: var(--muted); font-size: .7rem; }
 .intro-icons span { display: grid; justify-items: center; gap: 4px; }
-.intro-icons img { width: 28px; height: 28px; object-fit: contain; }
+.intro-icons img { width: 42px; height: 30px; object-fit: contain; }
 .intro-icons span:last-child img { border-radius: 50%; object-fit: cover; }
 .primary { min-width: 180px; margin-top: 21px; padding: 12px 22px; color: #190d07; background: linear-gradient(#ffdc88, #bd7130); border: 1px solid #ffe7ae; border-radius: 3px; box-shadow: 0 4px 0 #693719, 0 7px 18px #000a; font-weight: 900; }
 .primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #693719; }
@@ -87,19 +87,25 @@ button:focus-visible { outline: 2px solid #fff1c8; outline-offset: 3px; }
 .choice-card:active:not(:disabled) { transform: translateY(2px); }
 .choice-card small { grid-column: 2; color: var(--muted); font-size: .64rem; line-height: 1.25; }
 .choice-name { color: var(--cream); font-size: .95rem; font-weight: 900; }
-.card-icon { grid-row: 1 / span 2; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid #99633d; border-radius: 50%; background: #21120c; }
-.card-icon img { width: 30px; height: 30px; object-fit: contain; }
-.bonus-choice .card-icon { border-color: #c28c3f; }
-.bonus-choice .card-icon img { filter: drop-shadow(0 0 5px #f7b74d); }
+.card-icon { grid-row: 1 / span 2; display: grid; place-items: center; width: 56px; height: 56px; filter: drop-shadow(0 4px 5px #0009); }
+.card-icon img { width: 56px; height: 48px; object-fit: contain; }
+.bonus-choice .card-icon img { filter: drop-shadow(0 0 7px #f7b74d); }
 
 .weapon-panel { position: relative; z-index: 3; display: grid; grid-template-columns: 1fr 96px 1fr; align-items: center; gap: 8px; min-height: 137px; margin-top: 10px; padding: 7px 8px 5px; background: linear-gradient(#22140e, #120a07); border-top: 1px solid #7b4f31; border-bottom: 1px solid #3f281a; }
 .weapon-label { display: grid; gap: 3px; align-self: end; color: var(--muted); font-size: .68rem; }
 .weapon-label strong { color: var(--gold); font-size: .78rem; }
 .weapon { position: relative; width: 96px; height: 96px; }
-.cylinder { position: absolute; inset: 4px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 4px; padding: 14px; border: 7px solid #563521; border-radius: 50%; background: radial-gradient(circle, #a26a3e 0 13%, #28150e 14% 62%, #875431 63% 73%, #1c100b 74%); box-shadow: inset 0 0 0 2px #d08b4c66, 0 5px 12px #000b; transform-origin: center; }
-.cylinder i { display: block; border: 2px solid #0e0806; border-radius: 50%; background: #372117; box-shadow: inset 0 0 0 2px #17100c; }
-.cylinder i.loaded { background: radial-gradient(circle at 35% 30%, #ffe29b, #b66e2f 45%, #3a1b0e 75%); box-shadow: inset 0 0 0 2px #e5a34c66, 0 0 5px #d9842e66; }
-.cylinder i.selected { background: #ef6644; box-shadow: 0 0 12px #ff4e2c; }
+.cylinder { position: absolute; inset: 0; transform-origin: center; }
+.cylinder::before { content: ''; position: absolute; inset: 0; background: url('assets/cylinder-ui.webp') center / contain no-repeat; filter: drop-shadow(0 5px 8px #000b); }
+.cylinder i { position: absolute; z-index: 1; display: block; width: 19%; aspect-ratio: 1; border: 2px solid #5a3b27; border-radius: 50%; background: transparent; transform: translate(-50%, -50%); }
+.cylinder i:nth-child(1) { top: 15%; left: 50%; }
+.cylinder i:nth-child(2) { top: 31%; left: 77%; }
+.cylinder i:nth-child(3) { top: 69%; left: 77%; }
+.cylinder i:nth-child(4) { top: 85%; left: 50%; }
+.cylinder i:nth-child(5) { top: 69%; left: 23%; }
+.cylinder i:nth-child(6) { top: 31%; left: 23%; }
+.cylinder i.loaded { border-color: #f7c66b; background: radial-gradient(circle, #ffe6a4 0 22%, #d48a35 34%, #8f471f 58%, #27140d 72%); box-shadow: 0 0 7px #eaa149; }
+.cylinder i.selected { border-color: #ff9e78; background: radial-gradient(circle, #fff0bf 0 15%, #ef6644 35%, #7f241b 72%); box-shadow: 0 0 14px #ff4e2c; }
 .cylinder-pointer { position: absolute; z-index: 2; top: -3px; left: 50%; width: 0; height: 0; border-inline: 8px solid transparent; border-top: 14px solid var(--gold); transform: translateX(-50%); filter: drop-shadow(0 2px 2px #000); }
 .fire-button { align-self: end; min-height: 67px; padding: 8px 7px; color: #2a1108; background: radial-gradient(circle at 50% 30%, #ffcf77, #a94c25); border: 2px solid #ffd88b; border-radius: 50% 50% 45% 45%; box-shadow: 0 4px 0 #5e2917, 0 0 15px #f0702c55; }
 .fire-button span { display: block; font-size: 1.12rem; font-weight: 1000; letter-spacing: .08em; }

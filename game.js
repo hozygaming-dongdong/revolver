@@ -159,7 +159,7 @@ async function spinReward(kind) {
   const index = pickWeighted(list);
   const value = isFinal ? finalDraw[Math.min(finalDraw.length - 1, index + up)].multiplier : ammoDraw[index].value;
   buildWheel(isFinal ? 'final' : 'ammo');
-  ui['loot-core'].src = isFinal ? 'assets/coin.png' : 'assets/cartridge.png';
+  ui['loot-core'].src = isFinal ? 'assets/bounty-token.webp' : 'assets/ammo-cache.webp';
   text('loot-kicker', isFinal ? '最終獎金抽選' : '補給抽選');
   text('loot-title', isFinal ? '最後一槍，抽出倍率' : '轉出你的補給');
   text('loot-result', '轉輪啟動中…');

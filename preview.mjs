@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 
 const files = new Set(['index.html', 'game.js', 'rules.js', 'audio.js', 'style.css', 'assets/corridor.webp', 'assets/zombie.webp',
+  'assets/cylinder-ui.webp', 'assets/ammo-cache.webp', 'assets/bounty-token.webp',
   'assets/gunslinger.png', 'assets/coin.png', 'assets/cartridge.png', 'assets/boss.webp',
   'assets/chest-bronze.png', 'assets/chest-silver.png', 'assets/chest-gold.png', 'assets/final-cache.webp',
   'assets/vault-coin.jpg', 'assets/vault-ammo.jpg', 'assets/reward-empty.webp',
