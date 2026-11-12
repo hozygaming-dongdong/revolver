@@ -38,6 +38,10 @@ const revolverRules = (() => {
     return { hit, chambers: hit ? chambers.map((value, i) => i === selected ? false : value) : chambers };
   }
 
+  function shootBarrel(random = Math.random) {
+    return random() < .5 ? 'exploded' : 'blocked';
+  }
+
   function drawBossPair(random = Math.random) {
     if (random() < .6) return null;
     const closer = random() < .5 ? 0 : 1;
@@ -93,7 +97,7 @@ const revolverRules = (() => {
   return {
     slots, startAmmo, ammoLimit, finalStage, bossShotLimit, bossHealth, chestTiers, coinMultipliers, maxBaseMultiplier,
     initialCylinder, countAmmo, price, canBuy, ammoPurchaseCount, chamberIndex, loadAmmo, shoot, encounters,
-    supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex, drawBossPair, advanceBossPair,
+    supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex, drawBossPair, advanceBossPair, shootBarrel,
   };
 })();
 

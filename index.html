@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=19">
-  <script defer src="rules.js?v=19"></script>
-  <script defer src="audio.js?v=5"></script>
-  <script defer src="game.js?v=19"></script>
+  <link rel="stylesheet" href="style.css?v=20">
+  <script defer src="rules.js?v=20"></script>
+  <script defer src="audio.js?v=20"></script>
+  <script defer src="game.js?v=20"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -52,6 +52,19 @@
       </div>
       <img class="enemy" id="enemy" src="assets/zombie.png" alt="" hidden>
       <img class="enemy boss-enemy" id="boss-enemy" src="assets/boss.png" alt="" hidden>
+      <div class="oil-scene" id="oil-scene" role="group" aria-label="油桶首領射擊目標" hidden>
+        <div class="barrel-cover" id="barrel-cover">
+          <img id="barrel-prop" width="720" height="360" alt="" draggable="false">
+          <button class="barrel-target" id="barrel-target" type="button" aria-label="射擊油桶，實彈有一半機率引爆">
+            <span>實彈 50% 引爆</span>
+          </button>
+        </div>
+        <div class="twin-lane">
+          <button class="twin-target oil-boss-target" id="oil-boss-target" type="button" aria-label="射擊油桶首領">
+            <img class="twin-art" id="oil-boss-art" src="assets/boss.png" alt="" draggable="false">
+          </button>
+        </div>
+      </div>
       <div class="twin-bosses" id="twin-bosses" role="group" aria-label="雙首領射擊目標" hidden>
         <div class="twin-lane">
           <button class="twin-target" type="button" data-name="左側突進首領">
@@ -183,8 +196,9 @@
     <p>前五關先看門上的銅、銀、金等級，再選擇房間。進房後可開一槍或繞過，擊倒守衛即可開箱。軍械庫補 0 至 3 發，金幣庫開出 1×、1.2×、1.5× 或 2×，乘上目前的累積倍率。繞過或空槍直接進下一關。</p>
     <p>兩個庫各自抽出銅箱 45%、銀箱 43%、金箱 12%。金幣金箱至少開出 1.5×。軍械庫銅箱有 5% 機率開空，銀箱至少補 1 發，金箱至少補 2 發。</p>
     <p>前五關選庫時，每發可用押注的 20% 加購，付費最多補到 3 發。</p>
-    <p>開局抽出單首領（60%）或雙首領（40%）。首領戰最多開 4 槍，入場至少要有 3 發彈藥。單首領有 3 格血。</p>
+    <p id="boss-draw-rules">開局抽出單首領（60%）或雙首領（40%）。首領戰最多開 4 槍，入場至少要有 3 發彈藥。單首領有 3 格血。</p>
     <p>雙首領左邊 1 格血、右邊 2 格血。點角色即可開槍，命中讓牠後退一步，另一隻繼續逼近。空槍時兩隻一起前進。任一隻撲到面前就輸，兩隻都擊倒才通關。</p>
+    <p id="barrel-rules" hidden>油桶首領試玩中，點首領命中可扣一格血。點油桶抽到實彈後，有 50% 引爆並立即通關，另 50% 打中矮牆，碎石會蓋住油桶。抽到空膛只扣一次開槍機會。</p>
     <p>第五關結束時若不足 3 發，可在首領開戰前一次補齊，每發仍為押注的 20%。放棄補彈會結束本輪。</p>
     <p>打贏首領後，最終寶箱的基礎獎金乘上累積倍率。基礎獎金至少返還押注及補彈費，最高為原押注的 10×。首領戰失敗，倍率不結算，本局投入不退回。</p>
     <form method="dialog"><button class="primary">返回遊戲</button></form>

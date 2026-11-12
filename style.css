@@ -163,8 +163,8 @@ button:not(:disabled):active { filter: brightness(1.24); }
   pointer-events: none;
 }
 .twin-target[data-danger]::before { border-color: #fa685b; box-shadow: inset 0 0 16px #9d2614a6, 0 0 12px #f63c325e; }
-.twin-target[data-aimed]::after {
-  content: ''; position: absolute; left: 48%; top: 16%; translate: -50% -50%; width: 32px; aspect-ratio: 1;
+:is(.twin-target, .barrel-target)[data-aimed]::after {
+  content: ''; position: absolute; left: 48%; top: var(--aim-height, 16%); translate: -50% -50%; width: 32px; aspect-ratio: 1;
   border: 2px solid #ffd285; border-radius: 50%; box-shadow: 0 0 10px #fc883f;
   background: linear-gradient(#ffd285, #ffd285) center / 1px 85% no-repeat,
     linear-gradient(#ffd285, #ffd285) center / 85% 1px no-repeat;
@@ -185,11 +185,61 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .twin-target[data-defeated] :is(.twin-status), .twin-target[data-defeated]::before { visibility: hidden; }
 .twin-target[data-defeated] .twin-art { animation: twin-fall .45s .09s ease-in both; }
 .twin-target[data-lunge] .twin-art { animation: twin-lunge .29s cubic-bezier(.65, 0, .86, .55) both; }
-.arena[data-target='twins'] .console { pointer-events: none; }
-.arena[data-target='twins'] .console button { pointer-events: auto; }
+.arena:is([data-target='twins'], [data-target='oil']) .console { pointer-events: none; }
+.arena:is([data-target='twins'], [data-target='oil']) .console button { pointer-events: auto; }
 @keyframes twin-flinch { 55% { transform: translateY(-3%) rotate(-5deg); } }
 @keyframes twin-fall { to { transform: translateY(28%) rotate(24deg); opacity: .15; } }
 @keyframes twin-lunge { to { transform: translateX(var(--lunge-x)) scale(2.3); } }
+.oil-scene {
+  position: absolute; z-index: 1; inset: 27% 3% 14%; display: grid;
+  grid-template-columns: 43% 1fr; gap: 5px; pointer-events: none;
+}
+.oil-scene .twin-lane { --lunge-x: -35%; }
+.oil-boss-target { width: min(96%, calc(83% + 7% * var(--twin-step, 0))); }
+[data-target='oil'][data-shot='hit'] .oil-boss-target { transition-delay: .22s; }
+[data-target='oil'][data-shot='hit'] .oil-boss-target .twin-art { animation: twin-flinch .24s ease-out; }
+.barrel-cover {
+  position: absolute; z-index: 1; top: 45%; left: 0; width: 43%;
+  filter: drop-shadow(0 5px 6px #000c);
+}
+.barrel-cover img { display: block; width: 100%; height: auto; user-select: none; }
+.oil-scene > .twin-lane { grid-column: 2; }
+.barrel-target {
+  --aim-height: 50%;
+  position: absolute; top: 22%; left: 50%; translate: -50% -50%; width: max(44px, 32%); height: 44px;
+  padding: 0; border: 0; background: transparent; pointer-events: auto;
+}
+.barrel-target:disabled { pointer-events: none; }
+.barrel-target::before {
+  content: ''; position: absolute; inset: 13px 2px; border: 1px solid #ffc07c; border-radius: 50%;
+  box-shadow: 0 0 10px #fc883fb0, inset 0 0 9px #fc883f91;
+}
+.barrel-target span {
+  position: absolute; bottom: 88%; left: 50%; translate: -50% 0; padding: 3px 5px;
+  border: 1px solid #b66a3d; background: #27150fee; color: #ffd4a6;
+  font-size: .68rem; font-weight: 800; white-space: nowrap; pointer-events: none;
+}
+.barrel-cover:is([data-state='blocked'], [data-state='exploded']) img { clip-path: inset(29% 0 0); }
+.barrel-cover[data-state='blocked']::before {
+  content: ''; position: absolute; inset: 12% 17% 58%; background: linear-gradient(#7a6d5c, #4c3f34 75%);
+  clip-path: polygon(0 92%, 13% 58%, 26% 62%, 39% 14%, 53% 29%, 60% 5%, 75% 55%, 86% 49%, 100% 92%, 100% 100%, 0 100%);
+}
+.barrel-cover:is([data-state='blocked'], [data-state='exploded'])::after {
+  content: ''; position: absolute; z-index: 2; inset: -68% -55% -28%; pointer-events: none;
+  animation: barrel-impact .52s .10s ease-out both;
+}
+.barrel-cover[data-state='blocked']::after {
+  background: radial-gradient(ellipse, #fbe3bc 0 3%, #c8a989b0 13%, #9b806352 37%, transparent 65%);
+}
+.barrel-cover[data-state='exploded']::after {
+  background: radial-gradient(ellipse, #fff2bb 0 8%, #ffb443 22%, #f9571690 37%, #631b1150 51%, transparent 68%);
+  mix-blend-mode: screen;
+}
+@keyframes barrel-impact {
+  from { opacity: 1; transform: scale(.22); }
+  55% { opacity: .83; }
+  to { opacity: 0; transform: scale(1.4); }
+}
 .run-bonus {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   margin-top: 5px; padding: 4px 8px; border: 1px solid #704c32; background: #1e130e;
@@ -531,10 +581,10 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .muzzle, .impact, .tracer { position: absolute; z-index: 2; pointer-events: none; opacity: 0; }
 .muzzle, .impact { width: 60px; aspect-ratio: 1; translate: -50% -50%; background: radial-gradient(#fffac7 3%, #ffbd47 17%, #f7773166 46%, transparent 70%); }
 .tracer { width: 25px; height: 3px; transform-origin: 0 50%; background: linear-gradient(90deg, #ff8f2f88, #fff6b4); box-shadow: 0 0 7px #ffc060; border-radius: 50%; }
-:is([data-shot='hit'], [data-shot='kill']) .muzzle { animation: flash 180ms ease-out; }
-:is([data-shot='hit'], [data-shot='kill']) .impact { animation: flash 260ms .12s ease-out; }
+:is([data-shot='hit'], [data-shot='kill'], [data-shot='wall']) .muzzle { animation: flash 180ms ease-out; }
+:is([data-shot='hit'], [data-shot='kill'], [data-shot='wall']) .impact { animation: flash 260ms .12s ease-out; }
 [data-shot='kill'] .enemy { animation: fall .48s .12s ease-in both; }
-:is([data-shot='hit'], [data-shot='kill']) .shooter { animation: recoil .27s ease-out; }
+:is([data-shot='hit'], [data-shot='kill'], [data-shot='wall']) .shooter { animation: recoil .27s ease-out; }
 [data-shot='hit'] .enemy { animation: flinch .25s ease-out; }
 [data-shot='miss'] .vignette { animation: danger .61s ease-out; }
 @keyframes flash { from { opacity: 1; scale: 1.2; } to { opacity: 0; scale: .4; } }
@@ -583,12 +633,13 @@ dialog .primary { min-height: 44px; font-size: 1.1rem; }
   .enemy, .shooter, .muzzle, .impact, .vignette, [data-spin='locked'] .pointer { animation: none !important; }
   [data-outcome='clear'] #result-payout,
   [data-outcome='clear'] .settlement { animation: none; }
-  :is([data-shot='hit'], [data-shot='kill']) .muzzle { opacity: .75; }
+  :is([data-shot='hit'], [data-shot='kill'], [data-shot='wall']) .muzzle { opacity: .75; }
   [data-shot='miss'] .vignette { box-shadow: inset 0 0 45px 8px #b8301c; }
   .boss-enemy { transition: none; scale: 1; translate: none; }
   .twin-target { transition: none; }
   .twin-target .twin-art { animation: none !important; }
   .twin-target[data-defeated] .twin-art { opacity: .15; }
+  .barrel-cover::after { animation: none !important; opacity: 0; }
   .game[data-mode='boss-attack'] .arena::after { animation: none; background: #541b1659; }
   .loot-overlay:is([data-kind='ammo'], [data-kind='coin']) .loot-chest { animation: none; transition: none; }
 }
