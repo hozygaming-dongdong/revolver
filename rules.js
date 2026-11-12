@@ -23,6 +23,11 @@ const revolverRules = (() => {
     { type: 'normal', amount: 1, weight: 18 },
     { type: 'normal', amount: 2, weight: 10 },
   ];
+  const bountyDraw = [
+    { bonus: 0.2, weight: 60 },
+    { bonus: 0.5, weight: 30 },
+    { bonus: 1, weight: 10 },
+  ];
   const finalDraw = [
     { multiplier: 1, weight: 40 },
     { multiplier: 2, weight: 30 },
@@ -48,7 +53,7 @@ const revolverRules = (() => {
   const drawSpecial = (random = Math.random) => specialDraw[weightedIndex(specialDraw, random)];
   const drawFinalMultiplier = (random = Math.random) => finalDraw[weightedIndex(finalDraw, random)].multiplier;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
-  return { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, ammoDraw, specialDraw, finalDraw, initialCylinder, countAmmo, loadRound, drawAmmo, drawSpecial, drawFinalMultiplier, chamberIndex };
+  return { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, ammoDraw, specialDraw, bountyDraw, finalDraw, initialCylinder, countAmmo, loadRound, drawAmmo, drawSpecial, drawFinalMultiplier, chamberIndex };
 })();
 
 if (typeof module !== 'undefined') module.exports = revolverRules;

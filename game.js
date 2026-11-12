@@ -1,5 +1,5 @@
 const { slots, rounds, prepRounds, bossRounds, bossMaxAmmo, initialCylinder, countAmmo, loadRound,
-  ammoDraw, specialDraw, finalDraw, chamberIndex } = revolverRules;
+  ammoDraw, specialDraw, bountyDraw, finalDraw, chamberIndex } = revolverRules;
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -12,7 +12,7 @@ const targetOptions = ['ammo', 'special', 'bounty'];
 const targetData = {
   ammo: { name: '補給殭屍', icon: 'assets/ammo-cache.webp', art: 'assets/boss-runner.webp', hint: '命中後抽普通彈，維持彈巢穩定。' },
   special: { name: '特殊彈殭屍', icon: 'assets/cylinder-ui.webp', art: 'assets/zombie.webp', hint: '命中後抽一顆爆擊、冰凍或賞金彈。' },
-  bounty: { name: '賞金殭屍', icon: 'assets/bounty-token.webp', art: 'assets/boss-armored.webp', hint: '命中後取得 +0.2X 獎金加成。' },
+  bounty: { name: '賞金殭屍', icon: 'assets/bounty-token.webp', art: 'assets/boss-armored.webp', hint: '命中後抽取 +0.2X、+0.5X 或 +1.0X。' },
 };
 
 let mode = 'ready';
@@ -27,7 +27,6 @@ let bossClock = 3;
 let bossPlan = [];
 let bossCritFired = 0;
 let bossFreezeFired = 0;
-let bossBountyFired = 0;
 let bountyBonus = 0;
 
 const chamberCells = chambers.map((loaded, index) => {
@@ -149,7 +148,6 @@ function reset() {
   bossPlan = [];
   bossCritFired = 0;
   bossFreezeFired = 0;
-  bossBountyFired = 0;
   bountyBonus = 0;
   ui['enemy-stage'].dataset.state = '';
   ui['door-select'].dataset.state = '';
@@ -203,7 +201,6 @@ function enterBoss() {
   bossPlan = [];
   bossCritFired = 0;
   bossFreezeFired = 0;
-  bossBountyFired = 0;
   ui['enemy-stage'].dataset.target = 'boss';
   ui['enemy-art'].src = 'assets/boss.webp';
   ui['enemy-art'].alt = 'Boss 殭屍';
@@ -266,7 +263,7 @@ function spinDial(selectedIndex, duration = 900) {
 }
 
 function buildWheel(kind) {
-  const values = kind === 'ammo' ? ammoDraw.map(({ value }) => value) : kind === 'special' ? specialDraw.map(({ type, amount }) => type === 'normal' ? '+' + amount + ' 普通彈' : ({ crit: '爆擊', freeze: '冰凍', bounty: '賞金' }[type]) + ' ×' + amount) : kind === 'bounty' ? ['賞金彈'] : finalDraw.map(({ multiplier }) => multiplier);
+  const values = kind === 'ammo' ? ammoDraw.map(({ value }) => value) : kind === 'special' ? specialDraw.map(({ type, amount }) => type === 'normal' ? '+' + amount + ' 普通彈' : ({ crit: '爆擊', freeze: '冰凍', bounty: '賞金' }[type]) + ' ×' + amount) : kind === 'bounty' ? bountyDraw.map(({ bonus }) => '+' + bonus.toFixed(1) + 'X') : finalDraw.map(({ multiplier }) => multiplier);
   ui['loot-disc'].replaceChildren(...values.map((value, index) => {
     const pocket = document.createElement('span');
     pocket.className = 'wheel-pocket';
@@ -284,28 +281,28 @@ function pickWeighted(list) {
 }
 
 async function spinReward(kind) {
-  const lists = { ammo: ammoDraw, special: specialDraw, bounty: [{ value: 'bounty', weight: 1 }], final: finalDraw };
+  const lists = { ammo: ammoDraw, special: specialDraw, bounty: bountyDraw, final: finalDraw };
   const list = lists[kind];
   const index = pickWeighted(list);
   const item = list[index];
-  const value = kind === 'ammo' ? item.value : kind === 'special' ? item : kind === 'bounty' ? 'bounty' : item.multiplier;
+  const value = kind === 'ammo' ? item.value : kind === 'special' ? item : kind === 'bounty' ? item.bonus : item.multiplier;
   buildWheel(kind);
   ui['loot-core'].src = kind === 'ammo' ? 'assets/ammo-cache.webp' : kind === 'special' ? 'assets/cylinder-ui.webp' : 'assets/bounty-token.webp';
   text('loot-kicker', kind === 'final' ? '最終獎金抽選' : '戰利品抽選');
-  text('loot-title', kind === 'ammo' ? '轉出普通彈' : kind === 'special' ? '取得特殊彈' : kind === 'bounty' ? '取得賞金彈' : '最後一槍，抽出倍率');
+  text('loot-title', kind === 'ammo' ? '轉出普通彈' : kind === 'special' ? '取得特殊彈' : kind === 'bounty' ? '抽取獎金加成' : '最後一槍，抽出倍率');
   text('loot-result', '抽選中…');
   ui.loot.hidden = false;
   mode = 'loot';
   render();
   await pause(260);
-  const count = kind === 'ammo' ? ammoDraw.length : kind === 'special' ? specialDraw.length : kind === 'bounty' ? 1 : finalDraw.length;
+  const count = kind === 'ammo' ? ammoDraw.length : kind === 'special' ? specialDraw.length : kind === 'bounty' ? bountyDraw.length : finalDraw.length;
   const step = 360 / count;
   const end = 1440 + (360 - index * step);
   const animation = ui['loot-disc'].animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + end + 'deg)' }], { duration: reducedMotion.matches ? 0 : 1100, easing: 'cubic-bezier(.17,.62,.24,1)' });
   await animation.finished;
   ui['loot-disc'].style.transform = 'rotate(' + end + 'deg)';
   const specialText = value.type === 'normal' ? '補充普通彈 ' + value.amount + ' 發' : '取得 ' + ({ crit: '爆擊彈', freeze: '冰凍彈', bounty: '賞金彈' }[value.type]) + ' ×' + value.amount;
-  text('loot-result', kind === 'ammo' ? '補充 ' + value + ' 發' : kind === 'special' ? specialText : kind === 'bounty' ? '取得 賞金彈' : '抽到 ' + multiplierText(value));
+  text('loot-result', kind === 'ammo' ? '補充 ' + value + ' 發' : kind === 'special' ? specialText : kind === 'bounty' ? '獲得 +' + value.toFixed(1) + 'X' : '抽到 ' + multiplierText(value));
   revolverAudio.play('lock');
   await pause(650);
   ui.loot.hidden = true;
@@ -316,7 +313,6 @@ function comboCounts() {
   return {
     crit: bossPlan.filter(type => type === 'crit').length,
     freeze: bossPlan.filter(type => type === 'freeze').length,
-    bounty: bossPlan.filter(type => type === 'bounty').length,
   };
 }
 
@@ -355,7 +351,7 @@ async function fire() {
       if (gained.type === 'normal') for (let i = 0; i < gained.amount; i++) loadRound(chambers, 'normal');
       else pocket[gained.type] += gained.amount;
     } else {
-      bountyBonus = Number((bountyBonus + .2).toFixed(1));
+      bountyBonus = Number((bountyBonus + await spinReward('bounty')).toFixed(1));
     }
     round++;
     selected = null;
@@ -377,9 +373,8 @@ async function fire() {
     bossFreezeFired++;
   }
   if (type === 'bounty') {
-    reward = .2 + (counts.bounty >= 2 && bossBountyFired > 0 ? .2 : 0) + (counts.bounty >= 3 && bossBountyFired > 1 ? .4 : 0);
+    reward = await spinReward('bounty');
     bountyBonus = Number((bountyBonus + reward).toFixed(1));
-    bossBountyFired++;
   }
   if (type === 'crit') bossCritFired++;
   bossHp = Math.max(0, bossHp - damage);
