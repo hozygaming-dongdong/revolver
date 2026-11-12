@@ -7,7 +7,7 @@
   <meta name="description" content="REVOLVER 左輪追獵：選目標、轉彈巢、一路拚到最高 10X。">
   <title>REVOLVER · 左輪追獵</title>
   <link rel="preload" as="image" href="assets/corridor.webp" fetchpriority="high">
-  <link rel="stylesheet" href="style.css?v=demo-3">
+  <link rel="stylesheet" href="style.css?v=demo-4">
   <script defer src="rules.js?v=demo-2"></script>
   <script defer src="audio.js?v=demo-2"></script>
   <script defer src="game.js?v=demo-2"></script>
@@ -42,24 +42,32 @@
       </section>
 
       <section class="hunt" id="hunt" hidden>
-        <div class="hunt-heading"><span class="eyebrow">選擇追獵目標</span><strong>開槍擊殺，換取你的路線獎勵</strong></div>
-        <div class="enemy-stage" id="enemy-stage">
-          <div class="choice-row" id="choice-row">
+        <section class="door-select" id="door-select">
+          <div class="state-title"><span class="state-icon">⌖</span><div><span class="eyebrow">下一步</span><strong>選擇要追逐的獎勵</strong></div></div>
+          <div class="door-row" id="choice-row">
             <button class="choice-card ammo-choice" id="choice-ammo" type="button">
-              <span class="door-label"><img src="assets/ammo-cache.webp" alt=""><b>補彈門</b></span>
-              <span class="door-scene"><span class="door-glow"></span><img src="assets/boss-runner.webp" alt="補彈殭屍"><i class="door-crosshair" aria-hidden="true"></i></span>
-              <span class="choice-name">彈藥殭屍</span>
-              <small>擊殺後轉輪抽 +0 / +1 / +2</small>
+              <span class="door-scene"><span class="door-emblem"><img src="assets/ammo-cache.webp" alt=""></span><span class="door-mark">SUPPLY</span><span class="door-handle"></span></span>
+              <span class="choice-name"><img src="assets/ammo-cache.webp" alt="">補彈路線</span>
+              <small>進門後擊殺目標<br>抽取 +0 / +1 / +2 發</small>
             </button>
             <button class="choice-card bonus-choice" id="choice-bonus" type="button">
-              <span class="door-label"><img src="assets/bounty-token.webp" alt=""><b>獎金門</b></span>
-              <span class="door-scene"><span class="door-glow"></span><img src="assets/boss-armored.webp" alt="獎金殭屍"><i class="door-crosshair" aria-hidden="true"></i></span>
-              <span class="choice-name">獎金殭屍</span>
-              <small>擊殺後累積一層 UP</small>
+              <span class="door-scene"><span class="door-emblem"><img src="assets/bounty-token.webp" alt=""></span><span class="door-mark">BOUNTY</span><span class="door-handle"></span></span>
+              <span class="choice-name"><img src="assets/bounty-token.webp" alt="">獎金路線</span>
+              <small>進門後擊殺目標<br>累積一層 UP</small>
             </button>
           </div>
-          <div class="hit-flash" id="hit-flash"></div>
-        </div>
+          <p class="state-help"><img src="assets/cylinder-ui.webp" alt="">先選門，再進入決鬥</p>
+        </section>
+
+        <section class="fight-stage" id="fight-stage" hidden>
+          <div class="encounter-brief"><img id="target-icon" src="assets/ammo-cache.webp" alt=""><div><span class="eyebrow">已進入目標區</span><strong id="target-name">補彈路線</strong></div><span class="encounter-arrow">→</span><span class="encounter-action">擊殺目標</span></div>
+          <div class="enemy-stage" id="enemy-stage">
+            <div class="enemy-glow"></div>
+            <img id="enemy-art" src="assets/boss-runner.webp" alt="本回合目標">
+            <span class="crosshair" id="crosshair" aria-hidden="true"></span>
+            <div class="hit-flash" id="hit-flash"></div>
+          </div>
+        </section>
       </section>
 
       <section class="result" id="result" hidden>

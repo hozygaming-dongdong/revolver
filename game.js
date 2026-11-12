@@ -54,12 +54,16 @@ function renderCylinder() {
 function render() {
   const ready = mode === 'ready';
   const result = mode === 'result';
-  const play = ['play', 'spinning', 'loot'].includes(mode);
+  const doors = ['doors', 'entering'].includes(mode);
+  const fight = ['fight', 'spinning', 'loot'].includes(mode);
+  const play = doors || fight;
   ui.game.dataset.mode = mode;
   ui.intro.hidden = !ready;
   ui.hunt.hidden = !play;
+  ui['door-select'].hidden = !doors;
+  ui['fight-stage'].hidden = !fight;
   ui.result.hidden = !result;
-  ui['weapon-panel'].hidden = !play;
+  ui['weapon-panel'].hidden = !fight;
   ui.route.hidden = ready || result;
   text('round-number', ready ? '—' : round + ' / ' + rounds);
   text('up', up);
@@ -67,13 +71,13 @@ function render() {
   ui['route-dot'].style.setProperty('--progress', Math.max(0, round - 1) / (rounds - 1) * 100 + '%');
   renderProgress();
   renderCylinder();
-  ui['choice-ammo'].disabled = mode !== 'play' || round > prepRounds;
-  ui['choice-bonus'].disabled = mode !== 'play';
+  ui['choice-ammo'].disabled = mode !== 'doors' || round > prepRounds;
+  ui['choice-bonus'].disabled = mode !== 'doors';
   ui['choice-ammo'].classList.toggle('selected', selected === 'ammo');
   ui['choice-bonus'].classList.toggle('selected', selected === 'bonus');
-  ui.fire.disabled = mode !== 'play' || selected === null || !countAmmo(chambers);
+  ui.fire.disabled = mode !== 'fight' || selected === null || !countAmmo(chambers);
   text('shot-state', selected === null ? '選擇目標' : selected === 'ammo' ? '補彈路線' : '獎金路線');
-  ui['choice-ammo'].querySelector('small').textContent = round > prepRounds ? '生死段封鎖' : '轉輪抽 +0 / +1 / +2';
+  ui['choice-ammo'].querySelector('small').innerHTML = round > prepRounds ? '進門後擊殺目標<br>補彈門已封鎖' : '進門後擊殺目標<br>抽取 +0 / +1 / +2 發';
 }
 
 function reset() {
@@ -84,6 +88,7 @@ function reset() {
   rotation = 0;
   chambers = initialCylinder();
   ui['enemy-stage'].dataset.state = '';
+  ui['door-select'].dataset.state = '';
   ui['loot'].hidden = true;
   setHint('先選目標，再轉彈巢。');
   render();
@@ -92,20 +97,31 @@ function reset() {
 function start() {
   revolverAudio.unlock();
   revolverAudio.startMusic();
-  mode = 'play';
+  mode = 'doors';
   round = 1;
   up = 0;
   selected = null;
   chambers = initialCylinder();
-  setHint('選擇你要追逐的目標。');
+  setHint('先選一扇門，決定這一回合追逐什麼。');
   render();
 }
 
-function selectChoice(choice) {
-  if (mode !== 'play' || (choice === 'ammo' && round > prepRounds)) return;
+async function selectChoice(choice) {
+  if (mode !== 'doors' || (choice === 'ammo' && round > prepRounds)) return;
   selected = choice;
   ui['enemy-stage'].dataset.target = choice;
-  setHint(choice === 'ammo' ? '補彈：成功後轉輪抽出補充數量。' : '獎金 UP：成功後累積一層，最後抽倍率。');
+  ui['door-select'].dataset.state = 'opening';
+  setHint(choice === 'ammo' ? '補彈門開啟，進入目標區。' : '獎金門開啟，進入目標區。');
+  mode = 'entering';
+  render();
+  await pause(650);
+  ui['enemy-art'].src = choice === 'ammo' ? 'assets/boss-runner.webp' : 'assets/boss-armored.webp';
+  ui['enemy-art'].alt = choice === 'ammo' ? '補彈殭屍' : '獎金殭屍';
+  ui['target-icon'].src = choice === 'ammo' ? 'assets/ammo-cache.webp' : 'assets/bounty-token.webp';
+  text('target-name', choice === 'ammo' ? '補彈路線' : '獎金路線');
+  mode = 'fight';
+  ui['door-select'].dataset.state = '';
+  setHint('目標出現。轉動彈巢，準備開槍。');
   render();
 }
 
@@ -185,7 +201,7 @@ async function spinReward(kind) {
 }
 
 async function fire() {
-  if (mode !== 'play' || selected === null || !countAmmo(chambers)) return;
+  if (mode !== 'fight' || selected === null || !countAmmo(chambers)) return;
   const choice = selected;
   const chamber = chamberIndex();
   const hit = chambers[chamber];
@@ -225,9 +241,9 @@ async function fire() {
   }
   round++;
   selected = null;
-  mode = 'play';
+  mode = 'doors';
   ui['enemy-stage'].dataset.state = '';
-  setHint(round > prepRounds ? '生死段：只剩獎金路線。' : '下一回合，選擇你的目標。');
+  setHint(round > prepRounds ? '生死段：補彈門已封鎖，選擇獎金門。' : '下一回合，先選一扇門。');
   render();
 }
 
