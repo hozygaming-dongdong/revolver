@@ -12,7 +12,7 @@ const money = cents => '$' + (cents / 100).toLocaleString('zh-TW', {
 });
 const signed = value => `${value >= 0 ? '+' : '−'}${money(Math.abs(value))}`;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const barrelTrial = new URLSearchParams(location.search).get('boss') === 'barrel';
+const mixedBossTrial = new URLSearchParams(location.search).get('boss') === 'barrel';
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wait = ms => pause(reducedMotion.matches ? Math.min(ms, 140) : ms);
 const bets = [10_000, 20_000, 50_000, 100_000, 200_000];
@@ -34,6 +34,7 @@ let multiplier = 1;
 let shotsLeft = bossShotLimit;
 let hitsLeft = bossHealth;
 let bossPair = null;
+let barrelBoss = false;
 let barrelState = 'available';
 let spentOnAmmo = 0;
 let chambers = initialCylinder();
@@ -60,10 +61,10 @@ const healthCells = Array.from({ length: bossHealth }, () => document.createElem
 healthBar.append(...healthCells);
 healthBar.setAttribute('aria-valuemax', bossHealth);
 text('intro-cap', multiplierText(maxBaseMultiplier));
-if (barrelTrial) {
+if (mixedBossTrial) {
   ui['barrel-prop'].src = 'assets/barrel-cover.webp';
   ui['barrel-rules'].hidden = false;
-  text('boss-draw-rules', '這個試玩入口每局都遇到油桶首領。首領有 3 格血，最多開 4 槍，入場至少要有 3 發彈藥。');
+  text('boss-draw-rules', '開局抽出單首領（48%）、雙首領（32%）或油桶首領（20%）。首領戰最多開 4 槍，入場至少要有 3 發彈藥。');
 }
 
 function renderBossPair(visible) {
@@ -120,8 +121,8 @@ function render() {
   const choosing = selecting || opening || (transitioning && !atBoss && !selectedVault);
   const fighting = playing && !choosing;
   const showTwins = fighting && atBoss && Boolean(bossPair);
-  const showOil = fighting && atBoss && barrelTrial;
-  const bossName = barrelTrial ? '油桶首領' : bossPair ? '雙首領' : '單首領';
+  const showOil = fighting && atBoss && barrelBoss;
+  const bossName = barrelBoss ? '油桶首領' : bossPair ? '雙首領' : '單首領';
   const showBossProgress = fighting && atBoss && !transitioning && !bossSupply && !bossReload;
   const inVault = fighting && !atBoss && Boolean(selectedVault);
   const target = inVault ? targets[stage - 1][selectedVault] : null;
@@ -187,7 +188,7 @@ function render() {
   healthBar.hidden = showBossProgress && showTwins;
   bossStageLabel.textContent = ready ? '首領' : bossName;
   ui['boss-draw'].hidden = !choosing || stage !== 1;
-  text('boss-draw', `本輪首領 · ${bossName}${barrelTrial ? '（試玩）' : ''}`);
+  text('boss-draw', `本輪首領 · ${bossName}`);
   const healthParent = showBossProgress ? ui['boss-progress'] : stageCells[finalStage - 1];
   if (healthBar.parentElement !== healthParent) {
     if (showBossProgress) healthParent.prepend(healthBar);
@@ -231,7 +232,7 @@ function render() {
 function focusBoss(preferred = 0) {
   const control = bossPair
     ? (twinTargets[preferred].disabled ? twinTargets[1 - preferred] : twinTargets[preferred])
-    : barrelTrial ? ui['oil-boss-target'] : ui.primary;
+    : barrelBoss ? ui['oil-boss-target'] : ui.primary;
   control.focus({ preventScroll: true });
 }
 
@@ -371,7 +372,7 @@ async function fire(aim) {
   if (!['encounter', 'boss'].includes(mode) || !countAmmo(chambers)) return;
   const atBoss = mode === 'boss';
   const atTwins = atBoss && Boolean(bossPair);
-  const atOil = atBoss && barrelTrial;
+  const atOil = atBoss && barrelBoss;
   const aimingBarrel = atOil && aim === 'barrel';
   if (atTwins && !bossPair[aim]?.health) return;
   if (atOil && aim !== 'body' && !(aimingBarrel && barrelState === 'available')) return;
@@ -473,7 +474,8 @@ function start() {
   revolverAudio.startMusic();
   balance -= bet;
   targets = encounters();
-  bossPair = barrelTrial ? null : drawBossPair();
+  barrelBoss = mixedBossTrial && weightedIndex([1, 4]) === 0;
+  bossPair = barrelBoss ? null : drawBossPair();
   mode = 'vault';
   hint = '';
   render();
@@ -503,10 +505,10 @@ async function advance(message) {
   transition.dataset.boss = String(enteringBoss);
   transition.style.setProperty('--transition-time', `${duration}ms`);
   text('transition-result', message);
-  const bossTitle = barrelTrial ? '油桶首領' : bossPair ? '雙首領' : '首領';
+  const bossTitle = barrelBoss ? '油桶首領' : bossPair ? '雙首領' : '首領';
   text('transition-title', `第 ${stage} 關 → 第 ${nextStage} 關${enteringBoss ? `・${bossTitle}` : ''}`);
   ui['transition-boss'].hidden = !enteringBoss;
-  text('transition-boss', `${bossShotLimit} 次開槍機會・${barrelTrial ? '引爆油桶可一擊通關' : `需命中 ${bossHealth} 次`}`);
+  text('transition-boss', `${bossShotLimit} 次開槍機會・${barrelBoss ? '引爆油桶可一擊通關' : `需命中 ${bossHealth} 次`}`);
   mode = 'transition';
   hint = message;
   render();
@@ -570,6 +572,7 @@ function resetRound() {
   shotsLeft = bossShotLimit;
   hitsLeft = bossHealth;
   bossPair = null;
+  barrelBoss = false;
   barrelState = 'available';
   spentOnAmmo = 0;
   chambers = initialCylinder();
