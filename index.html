@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=18">
-  <script defer src="rules.js?v=17"></script>
+  <link rel="stylesheet" href="style.css?v=19">
+  <script defer src="rules.js?v=19"></script>
   <script defer src="audio.js?v=5"></script>
-  <script defer src="game.js?v=18"></script>
+  <script defer src="game.js?v=19"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -52,6 +52,26 @@
       </div>
       <img class="enemy" id="enemy" src="assets/zombie.png" alt="" hidden>
       <img class="enemy boss-enemy" id="boss-enemy" src="assets/boss.png" alt="" hidden>
+      <div class="twin-bosses" id="twin-bosses" role="group" aria-label="雙首領射擊目標" hidden>
+        <div class="twin-lane">
+          <button class="twin-target" type="button" data-name="左側突進首領">
+            <img class="twin-art" src="assets/boss-runner.webp" alt="" draggable="false">
+            <span class="twin-status" aria-hidden="true">
+              <span class="boss-health"><i></i></span>
+              <span class="twin-warning" hidden>下一步撲擊</span>
+            </span>
+          </button>
+        </div>
+        <div class="twin-lane">
+          <button class="twin-target" type="button" data-name="右側重甲首領">
+            <img class="twin-art" src="assets/boss-armored.webp" alt="" draggable="false">
+            <span class="twin-status" aria-hidden="true">
+              <span class="boss-health"><i></i><i></i></span>
+              <span class="twin-warning" hidden>下一步撲擊</span>
+            </span>
+          </button>
+        </div>
+      </div>
       <img class="shooter" src="assets/gunslinger.png" alt="">
       <div class="muzzle" id="muzzle" aria-hidden="true"></div>
       <div class="impact" id="impact" aria-hidden="true"></div>
@@ -69,6 +89,7 @@
         <div class="vault-heading">
           <h2 id="vault-title">選擇房間</h2>
           <p>擊倒房內守衛即可開箱</p>
+          <p class="boss-draw" id="boss-draw" hidden></p>
         </div>
         <div class="vault-doors">
           <button class="vault-door vault-coin" id="vault-coin" type="button">
@@ -162,7 +183,8 @@
     <p>前五關先看門上的銅、銀、金等級，再選擇房間。進房後可開一槍或繞過，擊倒守衛即可開箱。軍械庫補 0 至 3 發，金幣庫開出 1×、1.2×、1.5× 或 2×，乘上目前的累積倍率。繞過或空槍直接進下一關。</p>
     <p>兩個庫各自抽出銅箱 45%、銀箱 43%、金箱 12%。金幣金箱至少開出 1.5×。軍械庫銅箱有 5% 機率開空，銀箱至少補 1 發，金箱至少補 2 發。</p>
     <p>前五關選庫時，每發可用押注的 20% 加購，付費最多補到 3 發。</p>
-    <p>第六關最多開 4 槍，需命中 3 次。進入首領戰時至少要有 3 發彈藥。</p>
+    <p>開局抽出單首領（60%）或雙首領（40%）。首領戰最多開 4 槍，入場至少要有 3 發彈藥。單首領有 3 格血。</p>
+    <p>雙首領左邊 1 格血、右邊 2 格血。點角色即可開槍，命中讓牠後退一步，另一隻繼續逼近。空槍時兩隻一起前進。任一隻撲到面前就輸，兩隻都擊倒才通關。</p>
     <p>第五關結束時若不足 3 發，可在首領開戰前一次補齊，每發仍為押注的 20%。放棄補彈會結束本輪。</p>
     <p>打贏首領後，最終寶箱的基礎獎金乘上累積倍率。基礎獎金至少返還押注及補彈費，最高為原押注的 10×。首領戰失敗，倍率不結算，本局投入不退回。</p>
     <form method="dialog"><button class="primary">返回遊戲</button></form>

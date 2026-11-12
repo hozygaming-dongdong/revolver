@@ -38,6 +38,22 @@ const revolverRules = (() => {
     return { hit, chambers: hit ? chambers.map((value, i) => i === selected ? false : value) : chambers };
   }
 
+  function drawBossPair(random = Math.random) {
+    if (random() < .6) return null;
+    const closer = random() < .5 ? 0 : 1;
+    return [1, 2].map((health, i) => ({ health, distance: i === closer ? 2 : 3 }));
+  }
+
+  function advanceBossPair(pair, target, hit) {
+    return pair.map((boss, i) => {
+      if (!boss.health) return boss;
+      const struck = hit && i === target;
+      const health = boss.health - Number(struck);
+      const distance = health ? boss.distance + (struck ? 1 : -1) : boss.distance;
+      return { health, distance };
+    });
+  }
+
   function weightedIndex(weights, random = Math.random) {
     let roll = Math.floor(random() * weights.reduce((sum, weight) => sum + weight, 0));
     return weights.findIndex(weight => (roll -= weight) < 0);
@@ -77,7 +93,7 @@ const revolverRules = (() => {
   return {
     slots, startAmmo, ammoLimit, finalStage, bossShotLimit, bossHealth, chestTiers, coinMultipliers, maxBaseMultiplier,
     initialCylinder, countAmmo, price, canBuy, ammoPurchaseCount, chamberIndex, loadAmmo, shoot, encounters,
-    supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex,
+    supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex, drawBossPair, advanceBossPair,
   };
 })();
 

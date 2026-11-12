@@ -139,6 +139,57 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .boss-health .remaining { border-color: #ffc3a0; background: linear-gradient(#f1a17b, #a73f2e); }
 .boss-shots { display: flex; align-items: center; gap: 5px; color: #f4d7be; font-size: .75rem; font-weight: 700; }
 .boss-shots strong { color: var(--gold); font: 800 1.22rem/1 var(--display); }
+[data-target='twins'] .boss-progress { display: flex; width: auto; }
+.twin-bosses {
+  position: absolute; z-index: 1; inset: 27% 2% 14%; display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; pointer-events: none;
+}
+.twin-lane { position: relative; --lunge-x: 42%; }
+.twin-lane + .twin-lane { --lunge-x: -42%; }
+.twin-target {
+  position: absolute; inset-inline: 0; margin-inline: auto; padding: 0; border: 0;
+  top: calc(7% + 7% * var(--twin-step, 0)); width: min(96%, calc(70% + 10% * var(--twin-step, 0)));
+  aspect-ratio: 2 / 3; background: transparent; pointer-events: auto;
+  transition: top .34s ease-out, width .34s ease-out;
+}
+.twin-target:disabled { pointer-events: none; }
+.twin-art {
+  display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none;
+  filter: drop-shadow(0 5px 6px #000b);
+}
+.twin-target::before {
+  content: ''; position: absolute; inset: 3px; border: 1px solid #e4bc7c69; border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 87%, #e3a15129, transparent 66%);
+  pointer-events: none;
+}
+.twin-target[data-danger]::before { border-color: #fa685b; box-shadow: inset 0 0 16px #9d2614a6, 0 0 12px #f63c325e; }
+.twin-target[data-aimed]::after {
+  content: ''; position: absolute; left: 48%; top: 16%; translate: -50% -50%; width: 32px; aspect-ratio: 1;
+  border: 2px solid #ffd285; border-radius: 50%; box-shadow: 0 0 10px #fc883f;
+  background: linear-gradient(#ffd285, #ffd285) center / 1px 85% no-repeat,
+    linear-gradient(#ffd285, #ffd285) center / 85% 1px no-repeat;
+  pointer-events: none;
+}
+.twin-status {
+  position: absolute; bottom: calc(100% + 4px); inset-inline: 0; display: grid;
+  justify-items: center; gap: 3px; pointer-events: none;
+}
+.twin-status .boss-health { width: min(75%, 72px); gap: 3px; }
+.twin-status .boss-health i { height: 7px; }
+.twin-warning {
+  padding: 2px 5px; color: #ffe1ca; background: #511b14; border: 1px solid #fc7862;
+  font-size: .68rem; font-weight: 800; white-space: nowrap;
+}
+.twin-target[data-struck] { transition-delay: .22s; }
+.twin-target[data-struck] .twin-art { animation: twin-flinch .24s ease-out; }
+.twin-target[data-defeated] :is(.twin-status), .twin-target[data-defeated]::before { visibility: hidden; }
+.twin-target[data-defeated] .twin-art { animation: twin-fall .45s .09s ease-in both; }
+.twin-target[data-lunge] .twin-art { animation: twin-lunge .29s cubic-bezier(.65, 0, .86, .55) both; }
+.arena[data-target='twins'] .console { pointer-events: none; }
+.arena[data-target='twins'] .console button { pointer-events: auto; }
+@keyframes twin-flinch { 55% { transform: translateY(-3%) rotate(-5deg); } }
+@keyframes twin-fall { to { transform: translateY(28%) rotate(24deg); opacity: .15; } }
+@keyframes twin-lunge { to { transform: translateX(var(--lunge-x)) scale(2.3); } }
 .run-bonus {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   margin-top: 5px; padding: 4px 8px; border: 1px solid #704c32; background: #1e130e;
@@ -253,6 +304,7 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .vault-heading { text-align: center; }
 .vaults h2 { margin: 0; text-align: center; color: #f8dfb5; font-size: clamp(1.24rem, 5.6vw, 1.8rem); letter-spacing: .10em; }
 .vault-heading p { margin: 3px 0 0; color: #d8bb9d; font-size: .82rem; font-weight: 700; }
+.vault-heading .boss-draw { color: var(--gold); }
 .vault-doors { min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(8px, 3vw, 15px); }
 .vault-door {
   --door-light: #ffd09a; --door-shadow: #63361f;
@@ -534,6 +586,9 @@ dialog .primary { min-height: 44px; font-size: 1.1rem; }
   :is([data-shot='hit'], [data-shot='kill']) .muzzle { opacity: .75; }
   [data-shot='miss'] .vignette { box-shadow: inset 0 0 45px 8px #b8301c; }
   .boss-enemy { transition: none; scale: 1; translate: none; }
+  .twin-target { transition: none; }
+  .twin-target .twin-art { animation: none !important; }
+  .twin-target[data-defeated] .twin-art { opacity: .15; }
   .game[data-mode='boss-attack'] .arena::after { animation: none; background: #541b1659; }
   .loot-overlay:is([data-kind='ammo'], [data-kind='coin']) .loot-chest { animation: none; transition: none; }
 }

@@ -2,6 +2,7 @@ const {
   slots, finalStage, bossShotLimit, bossHealth, initialCylinder, countAmmo, ammoPurchaseCount, loadAmmo,
   chamberIndex, shoot, price, encounters, chestTiers, coinMultipliers, maxBaseMultiplier,
   supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex,
+  drawBossPair, advanceBossPair,
 } = revolverRules;
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
@@ -31,6 +32,7 @@ let selectedVault = null;
 let multiplier = 1;
 let shotsLeft = bossShotLimit;
 let hitsLeft = bossHealth;
+let bossPair = null;
 let spentOnAmmo = 0;
 let chambers = initialCylinder();
 let rotation = 0;
@@ -42,6 +44,9 @@ const stageCells = Array.from({ length: finalStage }, (_, i) => {
   ui.ladder.append(cell);
   return cell;
 });
+const bossStageLabel = stageCells[finalStage - 1].firstChild;
+const twinTargets = [...ui['twin-bosses'].querySelectorAll('button')];
+const twinArt = twinTargets.map(button => button.querySelector('img'));
 const chamberCells = chambers.map((_, i) => {
   const cell = document.createElement('i');
   cell.style.setProperty('--angle', `${i * 60}deg`);
@@ -53,6 +58,27 @@ const healthCells = Array.from({ length: bossHealth }, () => document.createElem
 healthBar.append(...healthCells);
 healthBar.setAttribute('aria-valuemax', bossHealth);
 text('intro-cap', multiplierText(maxBaseMultiplier));
+
+function renderBossPair(visible) {
+  ui['twin-bosses'].hidden = !visible;
+  if (!visible) return;
+  const attacker = mode === 'boss-attack' && bossPair.reduce((closest, boss) =>
+    boss.health && (!closest || boss.distance < closest.distance) ? boss : closest, null);
+  twinTargets.forEach((button, i) => {
+    const boss = bossPair[i];
+    const danger = boss.health > 0 && boss.distance === 1 && mode !== 'boss-attack';
+    button.disabled = mode !== 'boss' || !boss.health;
+    button.toggleAttribute('data-danger', danger);
+    button.toggleAttribute('data-defeated', !boss.health);
+    button.toggleAttribute('data-lunge', boss === attacker);
+    button.style.setProperty('--twin-step', 3 - boss.distance);
+    button.querySelector('.twin-warning').hidden = !danger;
+    button.querySelectorAll('.boss-health i').forEach((cell, index) => cell.classList.toggle('remaining', index < boss.health));
+    button.setAttribute('aria-label', boss.health
+      ? `射擊${button.dataset.name}，剩 ${boss.health} 格血${danger ? '，下一步撲擊' : ''}`
+      : `${button.dataset.name}已擊倒`);
+  });
+}
 
 function render() {
   const bet = bets[betIndex];
@@ -72,6 +98,8 @@ function render() {
   const selecting = mode === 'vault';
   const choosing = selecting || opening || (transitioning && !atBoss && !selectedVault);
   const fighting = playing && !choosing;
+  const showTwins = fighting && atBoss && Boolean(bossPair);
+  const bossName = bossPair ? '雙首領' : '單首領';
   const showBossProgress = fighting && atBoss && !transitioning && !bossSupply && !bossReload;
   const inVault = fighting && !atBoss && Boolean(selectedVault);
   const target = inVault ? targets[stage - 1][selectedVault] : null;
@@ -81,12 +109,13 @@ function render() {
   const ammoShortage = bossHealth - ammo;
   ui.game.dataset.mode = mode;
   ui.arena.dataset.scene = ready ? 'intro' : finished ? 'settlement' : choosing ? 'vault' : 'fight';
-  ui.arena.dataset.target = fighting && atBoss ? 'boss' : target ?? '';
+  ui.arena.dataset.target = fighting && atBoss ? (showTwins ? 'twins' : 'boss') : target ?? '';
   ui.arena.dataset.vault = inVault ? selectedVault : '';
   ui.arena.toggleAttribute('data-boss-danger', fighting && atBoss && !attacking && shotsLeft === 1 && hitsLeft === 1);
   ui['boss-enemy'].style.setProperty('--boss-steps', bossShotLimit - shotsLeft - Number(hitsLeft === 0));
   ui.enemy.hidden = !fighting || atBoss;
-  ui['boss-enemy'].hidden = !fighting || !atBoss;
+  ui['boss-enemy'].hidden = !fighting || !atBoss || showTwins;
+  renderBossPair(showTwins);
   ui.weapon.hidden = !fighting;
   ui.intro.hidden = !ready;
   ui.vaults.hidden = !choosing;
@@ -94,7 +123,7 @@ function render() {
   ui.settlement.hidden = !finished;
   ui.loot.hidden = !looting;
   ui['stage-transition'].hidden = !transitioning;
-  ui.primary.hidden = playing && !atBoss;
+  ui.primary.hidden = playing && (!atBoss || (showTwins && !bossSupply && !bossReload));
   ui.primary.disabled = busy || needsReset || (bossSupply && balance < cost);
   ui['forfeit-boss'].hidden = !bossSupply && !bossReload;
   ui['forfeit-boss'].disabled = busy;
@@ -118,7 +147,9 @@ function render() {
   text('boss-ammo', ammoShortage > 0 ? `首領戰缺 ${ammoShortage} 發` : '');
   text('hint', needsReset ? '餘額不足，請從選單重設資產'
     : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足`
-    : bossSupply && balance < cost ? '餘額不足，無法補齊彈藥' : hint);
+    : bossSupply && balance < cost ? '餘額不足，無法補齊彈藥'
+    : showTwins && mode === 'boss' && shotsLeft === bossShotLimit ? '點首領開槍，命中擊退一步'
+    : hint);
   const resetAmount = money(startingBalance);
   text('reset-note', busy ? '等待演出結束' : playing ? `結束本輪 · ${resetAmount}` : resetAmount);
   text('gate-number', String(stage).padStart(2, '0'));
@@ -128,6 +159,10 @@ function render() {
   text('jackpot-banner', `WIN UP TO ${multiplierText(maxBaseMultiplier * multiplier)}`);
   ui['encounter-detail'].hidden = atBoss;
   ui['boss-progress'].hidden = !showBossProgress;
+  healthBar.hidden = showBossProgress && showTwins;
+  bossStageLabel.textContent = ready ? '首領' : bossName;
+  ui['boss-draw'].hidden = !choosing || stage !== 1;
+  text('boss-draw', `本輪首領 · ${bossName}`);
   const healthParent = showBossProgress ? ui['boss-progress'] : stageCells[finalStage - 1];
   if (healthBar.parentElement !== healthParent) {
     if (showBossProgress) healthParent.prepend(healthBar);
@@ -147,7 +182,7 @@ function render() {
     }
   } else if (fighting && !transitioning) {
     if (atBoss) {
-      text('stage-plate', bossSupply || bossReload ? '首領門前' : '封鎖區首領');
+      text('stage-plate', bossSupply || bossReload ? '首領門前' : showTwins ? '雙首領' : '封鎖區首領');
     } else if (target) {
       const chest = chestTiers[target];
       const format = selectedVault === 'coin' ? i => multiplierText(coinMultipliers[i]) : ammoText;
@@ -166,6 +201,13 @@ function render() {
   });
   text('fire-odds', ammo ? `命中 ${ammo}/${slots}` : '無彈藥');
   text('buy-cost', balance < cost ? '餘額不足' : signed(-cost));
+}
+
+function focusBoss(preferred = 0) {
+  const control = bossPair
+    ? (twinTargets[preferred].disabled ? twinTargets[1 - preferred] : twinTargets[preferred])
+    : ui.primary;
+  control.focus({ preventScroll: true });
 }
 
 function finish(prize = null, reason = '') {
@@ -198,12 +240,12 @@ async function bossAttack(reason) {
   ui.primary.focus({ preventScroll: true });
 }
 
-function animateShot() {
+function animateShot(enemyArt, aimHeight = .07) {
   const gun = document.querySelector('.shooter').getBoundingClientRect();
-  const enemy = (stage === finalStage ? ui['boss-enemy'] : ui.enemy).getBoundingClientRect();
+  const enemy = enemyArt.getBoundingClientRect();
   const arena = ui.arena.getBoundingClientRect();
   const start = [gun.left + gun.width * .965 - arena.left, gun.top + gun.height * .182 - arena.top];
-  const end = [enemy.left + enemy.width * .48 - arena.left, enemy.top + enemy.height * .07 - arena.top];
+  const end = [enemy.left + enemy.width * .48 - arena.left, enemy.top + enemy.height * aimHeight - arena.top];
   for (const [element, coords] of [[ui.muzzle, start], [ui.tracer, start], [ui.impact, end]]) {
     element.style.left = `${coords[0]}px`;
     element.style.top = `${coords[1]}px`;
@@ -300,34 +342,45 @@ async function spinChest(kind, type, prizes, formatReward) {
   return prizes[selected];
 }
 
-async function fire() {
+async function fire(twinIndex) {
   if (!['encounter', 'boss'].includes(mode) || !countAmmo(chambers)) return;
   const atBoss = mode === 'boss';
+  const atTwins = atBoss && Boolean(bossPair);
+  if (atTwins && !bossPair[twinIndex]?.health) return;
+  const aimedBoss = atTwins ? twinTargets[twinIndex] : null;
+  const enemyArt = atTwins ? twinArt[twinIndex] : atBoss ? ui['boss-enemy'] : ui.enemy;
+  aimedBoss?.setAttribute('data-aimed', '');
   revolverAudio.unlock();
   mode = 'spinning';
   const selected = chamberIndex();
   const outcome = shoot(chambers, selected);
-  const lethal = outcome.hit && (!atBoss || hitsLeft === 1);
+  const lethal = outcome.hit && (!atBoss || (atTwins ? bossPair[twinIndex].health === 1 : hitsLeft === 1));
   hint = '彈巢旋轉中…';
   render();
   rotation = await spinDial(ui.weapon, ui.cylinder, selected, rotation, 850);
   chamberCells[selected].classList.add('selected');
   await wait(85);
-  if (outcome.hit) animateShot();
+  if (outcome.hit) animateShot(enemyArt, atTwins ? .16 : .07);
   ui.arena.dataset.shot = lethal ? 'kill' : outcome.hit ? 'hit' : 'miss';
   revolverAudio.play(outcome.hit ? 'fire' : 'empty');
   hint = lethal ? '命中 · 目標擊倒' : outcome.hit ? '命中首領' : '空槍 · 彈藥保留';
   if (atBoss) {
     shotsLeft--;
     if (outcome.hit) hitsLeft--;
+    if (atTwins) {
+      aimedBoss.toggleAttribute('data-struck', outcome.hit && !lethal);
+      bossPair = advanceBossPair(bossPair, twinIndex, outcome.hit);
+    }
   }
   render();
   await wait(620);
   chambers = outcome.chambers;
   chamberCells[selected].classList.remove('selected');
   delete ui.weapon.dataset.spin;
+  aimedBoss?.removeAttribute('data-aimed');
+  aimedBoss?.removeAttribute('data-struck');
   if (atBoss) {
-    if (lethal) {
+    if (hitsLeft === 0) {
       const prize = await spinChest('payout', null, finalWheel(bets[betIndex], spentOnAmmo, multiplier), money);
       text('loot-result', `獲得 ${money(prize.reward)}`);
       await pause(1050);
@@ -335,10 +388,12 @@ async function fire() {
       return finish(prize);
     }
     delete ui.arena.dataset.shot;
+    if (atTwins && bossPair.some(boss => boss.health && boss.distance === 0)) return bossAttack('首領已逼到面前');
     if (shotsLeft < hitsLeft) return bossAttack('剩餘開槍次數不足以擊倒首領');
     if (countAmmo(chambers) < hitsLeft) return bossAttack('彈藥不足以擊倒首領');
     mode = 'boss';
     render();
+    if (atTwins) focusBoss(twinIndex);
     return;
   }
   if (!outcome.hit) {
@@ -374,6 +429,7 @@ function start() {
   revolverAudio.startMusic();
   balance -= bet;
   targets = encounters();
+  bossPair = drawBossPair();
   mode = 'vault';
   hint = '';
   render();
@@ -403,7 +459,7 @@ async function advance(message) {
   transition.dataset.boss = String(enteringBoss);
   transition.style.setProperty('--transition-time', `${duration}ms`);
   text('transition-result', message);
-  text('transition-title', `第 ${stage} 關 → 第 ${nextStage} 關${enteringBoss ? '・首領' : ''}`);
+  text('transition-title', `第 ${stage} 關 → 第 ${nextStage} 關${enteringBoss ? (bossPair ? '・雙首領' : '・首領') : ''}`);
   ui['transition-boss'].hidden = !enteringBoss;
   text('transition-boss', `${bossShotLimit} 次開槍機會・需命中 ${bossHealth} 次`);
   mode = 'transition';
@@ -418,8 +474,11 @@ async function advance(message) {
   mode = enteringBoss ? (countAmmo(chambers) < bossHealth ? 'boss-supply' : 'boss') : 'vault';
   if (enteringBoss) hint = '';
   render();
-  const nextControl = enteringBoss ? ui.primary : ui['vault-coin'];
-  (nextControl.disabled ? ui['forfeit-boss'] : nextControl).focus({ preventScroll: true });
+  if (mode === 'boss') focusBoss();
+  else {
+    const nextControl = enteringBoss ? ui.primary : ui['vault-coin'];
+    (nextControl.disabled ? ui['forfeit-boss'] : nextControl).focus({ preventScroll: true });
+  }
 }
 
 function reload(amount) {
@@ -452,7 +511,7 @@ async function buyAmmo() {
     await wait(300);
     mode = 'boss';
     render();
-    ui.primary.focus({ preventScroll: true });
+    focusBoss();
     return;
   }
   render();
@@ -465,6 +524,7 @@ function resetRound() {
   multiplier = 1;
   shotsLeft = bossShotLimit;
   hitsLeft = bossHealth;
+  bossPair = null;
   spentOnAmmo = 0;
   chambers = initialCylinder();
   rotation = 0;
@@ -488,7 +548,8 @@ for (const [id, step] of [['bet-down', -1], ['bet-up', 1]]) {
 ui.skip.addEventListener('click', () => { if (mode === 'encounter') advance('已繞過 · 彈藥保留'); });
 ui['vault-coin'].addEventListener('click', () => enterVault('coin'));
 ui['vault-ammo'].addEventListener('click', () => enterVault('ammo'));
-ui.fire.addEventListener('click', fire);
+ui.fire.addEventListener('click', () => fire());
+twinTargets.forEach((button, index) => button.addEventListener('click', () => fire(index)));
 ui.buy.addEventListener('click', buyAmmo);
 ui['open-menu'].addEventListener('click', () => ui.menu.showModal());
 ui.sound.addEventListener('click', () => {
