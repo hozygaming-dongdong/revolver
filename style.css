@@ -118,18 +118,18 @@ button:not(:disabled):active { filter: brightness(1.24); }
 }
 .stage-plate {
   width: max-content; max-width: 96%; padding: 8px 21px; text-align: center;
-  display: flex; align-items: center; gap: 9px;
   font-size: clamp(.98rem, 4.25vw, 1.35rem); font-weight: 800;
   background: linear-gradient(#422a1b, #1d120d); border: 1px solid #b37a49;
   box-shadow: inset 0 0 0 3px #2a1a10, 0 4px 12px #000b;
 }
-.stage-plate img { width: 53px; height: 34px; object-fit: contain; }
 [data-target='silver'] .stage-plate { border-color: #9caeb3; }
 [data-target='gold'] .stage-plate { border-color: #f6c66b; }
 .encounter-detail {
+  display: grid; gap: 2px;
   margin: 0; padding: 4px 9px; color: #ffe3ba; background: #170e0cdb; border: 1px solid #795134;
   font-size: clamp(.75rem, 3.2vw, .88rem); font-weight: 700;
 }
+.encounter-detail strong { color: #fff0d0; }
 .boss-progress {
   display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; width: min(100%, 232px);
   padding: 6px 9px; background: #1b100def; border: 1px solid #8e513e;
@@ -250,43 +250,68 @@ button:not(:disabled):active { filter: brightness(1.24); }
   position: relative; z-index: 2; grid-row: 1; display: grid; grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(9px, 2dvh, 18px); width: 100%; padding: clamp(13px, 3dvh, 27px) clamp(12px, 4vw, 24px) 9px;
 }
+.vault-heading { text-align: center; }
 .vaults h2 { margin: 0; text-align: center; color: #f8dfb5; font-size: clamp(1.24rem, 5.6vw, 1.8rem); letter-spacing: .10em; }
+.vault-heading p { margin: 3px 0 0; color: #d8bb9d; font-size: .82rem; font-weight: 700; }
 .vault-doors { min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(8px, 3vw, 15px); }
 .vault-door {
-  --door-light: #ffc177; --door-shadow: #63361f; --tier-color: #eeb88e;
+  --door-light: #ffd09a; --door-shadow: #63361f;
+  --tier-color: #efb188; --tier-light: #ffb183; --tier-glow: #e9663990;
+  --seam-direction: 90deg; --seam-origin: right center; --floor-light: 88%;
   position: relative; min-width: 0; min-height: 0; isolation: isolate; padding: 0; overflow: hidden;
-  border: 1px solid var(--door-light); border-radius: 3px 3px 1px 1px;
-  background: linear-gradient(145deg, var(--door-shadow), #0b080788 68%), url('assets/corridor.jpg') center / cover;
-  box-shadow: 0 6px 20px #000a; text-align: center;
+  border: 1px solid var(--tier-color); border-radius: 3px 3px 1px 1px;
+  background: radial-gradient(ellipse at var(--floor-light) 75%, var(--tier-glow), transparent 70%),
+    linear-gradient(145deg, var(--door-shadow), #0b080788 68%), url('assets/corridor.jpg') center / cover;
+  box-shadow: 0 6px 20px #000a, 0 0 12px var(--tier-glow); text-align: center;
 }
 .vault-coin { --door-image: url('assets/vault-coin.jpg'); }
-.vault-ammo { --door-image: url('assets/vault-ammo.jpg'); --door-light: #a9cbd3; --door-shadow: #294c59; }
+.vault-ammo {
+  --door-image: url('assets/vault-ammo.jpg'); --door-light: #d1e8ed; --door-shadow: #294c59;
+  --seam-direction: 270deg; --seam-origin: left center; --floor-light: 12%;
+}
+.vault-door[data-tier='silver'] { --tier-color: #d9f1ff; --tier-light: #edfaff; --tier-glow: #95d7ff9c; }
+.vault-door[data-tier='gold'] { --tier-color: #ffe180; --tier-light: #fff2b0; --tier-glow: #ffbf34bb; }
 .vault-door-art {
   position: absolute; inset: 0; background: linear-gradient(transparent 48%, #0d0a09ba 78%, #100c0b), var(--door-image) center / cover;
-  box-shadow: inset 0 0 0 3px #0d0b0a80, inset 0 0 24px #0009; transform-origin: left center;
+  box-shadow: inset 0 0 0 3px #0d0b0a80, inset 0 0 24px #0009; transform-origin: left center; filter: saturate(.65);
 }
 .vault-ammo .vault-door-art { transform-origin: right center; }
+.vault-door::before, .vault-door::after { content: ''; position: absolute; z-index: 1; pointer-events: none; }
+.vault-door::before {
+  inset: 9% 3px 22% auto; width: 10%; transform-origin: var(--seam-origin);
+  background: linear-gradient(var(--seam-direction), transparent, var(--tier-glow) 82%, var(--tier-light) 88% 100%);
+  mask-image: linear-gradient(transparent, #000 13% 94%, transparent);
+}
+.vault-ammo::before { left: 3px; right: auto; }
+.vault-door::after {
+  inset: auto 0 0; height: 27%; mix-blend-mode: screen;
+  background: radial-gradient(ellipse at var(--floor-light) 16%, var(--tier-glow), transparent 68%);
+}
+.vault-tier {
+  position: absolute; z-index: 2; top: clamp(10px, 3.5dvh, 30px); left: 50%; translate: -50% 0;
+  padding: .24em .56em .32em; white-space: nowrap; border: 1px solid var(--tier-color); border-radius: 4px 4px 10px 10px;
+  color: var(--tier-color); background: linear-gradient(160deg, #392a23, #140e0b 65%);
+  box-shadow: inset 0 0 0 2px #140e0b, inset 0 4px 10px var(--tier-glow), 0 5px 13px #000c;
+  font-size: clamp(1.125rem, 4.8vw, 1.5rem); line-height: 1.15; font-weight: 900;
+  text-shadow: 0 2px 2px #000;
+}
 .vault-label {
-  position: absolute; inset: auto 4px clamp(7px, 2.8dvh, 22px); display: grid; justify-items: center; gap: 3px;
+  position: absolute; z-index: 2; inset: auto 4px clamp(7px, 2.8dvh, 22px); display: grid; justify-items: center; gap: 3px;
   text-shadow: 0 2px 8px #000, 0 2px 2px #000;
 }
 .vault-label strong { color: var(--door-light); font-size: clamp(1.13rem, 5.2vw, 1.62rem); white-space: nowrap; }
 .vault-label span { color: #f5e2ca; font-size: clamp(.68rem, 3vw, .84rem); font-weight: 700; }
-.vault-label small {
-  margin-top: 3px; padding: 3px 12px; color: var(--tier-color); background: #110e0bd9;
-  border: 1px solid var(--tier-color); font-size: clamp(.74rem, 3.15vw, .9rem); font-weight: 800;
-}
-.vault-door[data-tier='silver'] { --tier-color: #d3e3e7; }
-.vault-door[data-tier='gold'] { --tier-color: #ffdf7e; }
-.vault-door:not(:disabled):hover .vault-door-art { filter: brightness(1.12); }
-.vaults[data-opening]:not([data-opening='']) .vault-door { opacity: .58; transition: opacity 220ms; }
-:is(.vaults[data-opening='coin'] .vault-coin, .vaults[data-opening='ammo'] .vault-ammo) { opacity: 1; box-shadow: 0 0 23px var(--door-light); }
-:is(.vaults[data-opening='coin'] .vault-coin, .vaults[data-opening='ammo'] .vault-ammo) .vault-door-art { animation: vault-open 320ms ease-in both; }
-:is(.vaults[data-opening='coin'] .vault-coin, .vaults[data-opening='ammo'] .vault-ammo) .vault-label { opacity: 0; transition: opacity 160ms; }
+.vault-door:not(:disabled):hover .vault-door-art { filter: saturate(.65) brightness(1.12); }
+[data-mode='entering'] .vault-door:not([data-opening]) { opacity: .58; transition: opacity 220ms; }
+.vault-door[data-opening] { box-shadow: 0 0 26px var(--tier-glow); }
+.vault-door[data-opening] .vault-door-art { animation: vault-open 320ms ease-in both; }
+.vault-door[data-opening]::before { animation: vault-light-spread 320ms ease-in both; }
+.vault-door[data-opening] :is(.vault-label, .vault-tier) { opacity: 0; transition: opacity 160ms; }
 @keyframes vault-open {
-  0% { filter: brightness(1.17); transform: perspective(560px) rotateY(0); }
-  to { filter: brightness(.76); transform: perspective(560px) rotateY(-77deg); }
+  from { filter: saturate(.65) brightness(1.17); transform: perspective(560px) rotateY(0); }
+  to { filter: saturate(.65) brightness(.76); transform: perspective(560px) rotateY(-77deg); }
 }
+@keyframes vault-light-spread { to { scale: 10 1; opacity: .65; } }
 
 .loot-overlay {
   --loot-edge: #c59460; --loot-well: #52321a;
@@ -331,6 +356,16 @@ button:not(:disabled):active { filter: brightness(1.24); }
 .loot-chest {
   position: absolute; z-index: 2; top: 50%; left: 50%; width: 30%; height: 26%;
   transform: translate(-50%, -50%); object-fit: contain; filter: drop-shadow(0 3px 5px #000);
+}
+[data-revealing] :is(.loot-disc, .loot-wheel .pointer) { visibility: hidden; }
+.loot-overlay:is([data-kind='ammo'], [data-kind='coin']) .loot-chest { transition: width .2s ease, height .2s ease; }
+[data-revealing] .loot-chest {
+  width: 70%; height: 66%; filter: drop-shadow(0 8px 9px #000) drop-shadow(0 0 16px var(--loot-edge));
+  animation: vault-chest-reveal .54s ease-out both;
+}
+@keyframes vault-chest-reveal {
+  from { opacity: 0; transform: translate(-50%, -40%) scale(.85); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }
 [data-kind='payout'] .loot-chest { width: 37%; height: 33%; }
 .loot-pocket {
@@ -500,4 +535,5 @@ dialog .primary { min-height: 44px; font-size: 1.1rem; }
   [data-shot='miss'] .vignette { box-shadow: inset 0 0 45px 8px #b8301c; }
   .boss-enemy { transition: none; scale: 1; translate: none; }
   .game[data-mode='boss-attack'] .arena::after { animation: none; background: #541b1659; }
+  .loot-overlay:is([data-kind='ammo'], [data-kind='coin']) .loot-chest { animation: none; transition: none; }
 }

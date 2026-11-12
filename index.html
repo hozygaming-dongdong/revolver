@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
   <script defer src="rules.js?v=17"></script>
   <script defer src="audio.js?v=5"></script>
-  <script defer src="game.js?v=17"></script>
+  <script defer src="game.js?v=18"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -40,8 +40,11 @@
     <div class="arena" id="arena" data-scene="intro">
       <div class="gate-number" id="gate-number" aria-hidden="true">01</div>
       <div class="stage-status" id="stage-status" hidden>
-        <div class="stage-plate"><img id="chest-preview" alt="" hidden><span id="stage-plate"></span></div>
-        <p class="encounter-detail" id="encounter-detail"></p>
+        <div class="stage-plate" id="stage-plate"></div>
+        <p class="encounter-detail" id="encounter-detail">
+          <strong id="encounter-reward"></strong>
+          <span id="encounter-odds"></span>
+        </p>
         <div class="boss-progress" id="boss-progress" role="group" aria-label="首領戰進度" hidden>
           <span class="boss-health" id="boss-health" role="meter" aria-label="首領血量" aria-valuemin="0"></span>
           <span class="boss-shots">剩餘開槍 <strong id="boss-shots-left"></strong></span>
@@ -63,15 +66,20 @@
       </section>
 
       <section class="vaults" id="vaults" aria-labelledby="vault-title" hidden>
-        <h2 id="vault-title">選擇寶庫</h2>
+        <div class="vault-heading">
+          <h2 id="vault-title">選擇房間</h2>
+          <p>擊倒房內守衛即可開箱</p>
+        </div>
         <div class="vault-doors">
           <button class="vault-door vault-coin" id="vault-coin" type="button">
             <span class="vault-door-art" aria-hidden="true"></span>
-            <span class="vault-label"><strong>金幣庫</strong><span>累積倍率</span><small id="vault-coin-tier"></small></span>
+            <span class="vault-tier" id="vault-coin-tier"></span>
+            <span class="vault-label"><strong>金幣庫</strong><span>累積倍率</span></span>
           </button>
           <button class="vault-door vault-ammo" id="vault-ammo" type="button">
             <span class="vault-door-art" aria-hidden="true"></span>
-            <span class="vault-label"><strong>軍械庫</strong><span>補充彈藥</span><small id="vault-ammo-tier"></small></span>
+            <span class="vault-tier" id="vault-ammo-tier"></span>
+            <span class="vault-label"><strong>軍械庫</strong><span>補充彈藥</span></span>
           </button>
         </div>
       </section>
@@ -151,7 +159,7 @@
   <dialog id="rules" aria-labelledby="rules-title">
     <h2 id="rules-title">遊戲說明</h2>
     <p>每輪從 3 發起手，彈巢最多裝 6 發。每次開槍從六格均勻抽一格，抽到子彈才消耗一發。</p>
-    <p>前五關先看兩庫的箱級，選庫後再開一槍或繞過。擊殺後，軍械庫補 0 至 3 發，金幣庫開出 1×、1.2×、1.5× 或 2×，乘上目前的累積倍率。繞過或空槍直接進下一關。</p>
+    <p>前五關先看門上的銅、銀、金等級，再選擇房間。進房後可開一槍或繞過，擊倒守衛即可開箱。軍械庫補 0 至 3 發，金幣庫開出 1×、1.2×、1.5× 或 2×，乘上目前的累積倍率。繞過或空槍直接進下一關。</p>
     <p>兩個庫各自抽出銅箱 45%、銀箱 43%、金箱 12%。金幣金箱至少開出 1.5×。軍械庫銅箱有 5% 機率開空，銀箱至少補 1 發，金箱至少補 2 發。</p>
     <p>前五關選庫時，每發可用押注的 20% 加購，付費最多補到 3 發。</p>
     <p>第六關最多開 4 槍，需命中 3 次。進入首領戰時至少要有 3 發彈藥。</p>

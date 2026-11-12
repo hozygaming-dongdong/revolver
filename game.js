@@ -90,7 +90,6 @@ function render() {
   ui.weapon.hidden = !fighting;
   ui.intro.hidden = !ready;
   ui.vaults.hidden = !choosing;
-  ui.vaults.dataset.opening = opening ? selectedVault : '';
   ui.decisions.hidden = !inVault || transitioning;
   ui.settlement.hidden = !finished;
   ui.loot.hidden = !looting;
@@ -127,7 +126,6 @@ function render() {
   ui['run-bonus'].hidden = !playing;
   text('run-multiplier', multiplierText(multiplier));
   text('jackpot-banner', `WIN UP TO ${multiplierText(maxBaseMultiplier * multiplier)}`);
-  ui['chest-preview'].hidden = !target;
   ui['encounter-detail'].hidden = atBoss;
   ui['boss-progress'].hidden = !showBossProgress;
   const healthParent = showBossProgress ? ui['boss-progress'] : stageCells[finalStage - 1];
@@ -144,7 +142,8 @@ function render() {
       const tier = targets[stage - 1][vault];
       door.disabled = !selecting;
       door.dataset.tier = tier;
-      text(`vault-${vault}-tier`, chestTiers[tier].name);
+      door.toggleAttribute('data-opening', opening && selectedVault === vault);
+      text(`vault-${vault}-tier`, chestTiers[tier].name.replace('箱', '級'));
     }
   } else if (fighting && !transitioning) {
     if (atBoss) {
@@ -152,9 +151,9 @@ function render() {
     } else if (target) {
       const chest = chestTiers[target];
       const format = selectedVault === 'coin' ? i => multiplierText(coinMultipliers[i]) : ammoText;
-      ui['chest-preview'].src = chestArt(target);
-      text('stage-plate', `${vaultNames[selectedVault]}・${chest.name}`);
-      text('encounter-detail', chest[selectedVault].flatMap((odds, i) => odds ? [`${format(i)} ${odds}%`] : []).join(' · '));
+      text('stage-plate', `${vaultNames[selectedVault]}守衛`);
+      text('encounter-reward', `擊倒守衛可開${chest.name}`);
+      text('encounter-odds', chest[selectedVault].flatMap((odds, i) => odds ? [`${format(i)} ${odds}%`] : []).join(' · '));
     }
   }
   chamberCells.forEach((cell, i) => cell.classList.toggle('loaded', chambers[i]));
@@ -289,9 +288,11 @@ async function spinChest(kind, type, prizes, formatReward) {
   ui['loot-chest'].src = type ? chestArt(type) : finalCache;
   text('loot-title', type ? `${chestTiers[type].name}・${kind === 'coin' ? '倍率獎勵' : '彈藥補給'}` : '最終寶箱');
   text('loot-result', '');
+  ui.loot.toggleAttribute('data-revealing', Boolean(type));
   mode = 'loot';
   render();
   await pause(700);
+  ui.loot.removeAttribute('data-revealing');
   text('loot-result', '轉輪旋轉中…');
   const end = await spinDial(frame, face, selected, 0, 1450);
   face.style.setProperty('--upright', `${-end}deg`);
@@ -340,8 +341,10 @@ async function fire() {
     render();
     return;
   }
-  delete ui.arena.dataset.shot;
-  if (!outcome.hit) return advance(hint);
+  if (!outcome.hit) {
+    delete ui.arena.dataset.shot;
+    return advance(hint);
+  }
   const target = targets[stage - 1][selectedVault];
   let message;
   if (selectedVault === 'coin') {
@@ -356,6 +359,7 @@ async function fire() {
   text('loot-result', message);
   render();
   await pause(1050);
+  delete ui.arena.dataset.shot;
   return advance(message);
 }
 
