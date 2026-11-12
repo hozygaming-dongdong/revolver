@@ -11,8 +11,8 @@ const roundLabels = ['進入封鎖區', '穿過廢墟', '找到蹤跡', '逼近�
 const targetOptions = ['ammo', 'special', 'bounty'];
 const targetData = {
   ammo: { name: '補給殭屍', icon: 'assets/ammo-cache.webp', art: 'assets/boss-runner.webp', hint: '命中後抽普通彈，維持彈巢穩定。' },
-  special: { name: '特殊彈殭屍', icon: 'assets/cylinder-ui.webp', art: 'assets/zombie.webp', hint: '命中後取得一顆爆擊彈或冰凍彈。' },
-  bounty: { name: '賞金殭屍', icon: 'assets/bounty-token.webp', art: 'assets/boss-armored.webp', hint: '命中後取得一顆賞金彈，為 Boss 戰拚獎金。' },
+  special: { name: '特殊彈殭屍', icon: 'assets/cylinder-ui.webp', art: 'assets/zombie.webp', hint: '命中後抽一顆爆擊、冰凍或賞金彈。' },
+  bounty: { name: '賞金殭屍', icon: 'assets/bounty-token.webp', art: 'assets/boss-armored.webp', hint: '命中後取得 +0.2X 獎金加成。' },
 };
 
 let mode = 'ready';
@@ -266,7 +266,7 @@ function spinDial(selectedIndex, duration = 900) {
 }
 
 function buildWheel(kind) {
-  const values = kind === 'ammo' ? [0, 1, 2] : kind === 'special' ? ['爆擊', '冰凍'] : kind === 'bounty' ? ['賞金彈'] : finalDraw.map(({ multiplier }) => multiplier);
+  const values = kind === 'ammo' ? [0, 1, 2] : kind === 'special' ? ['爆擊', '冰凍', '賞金'] : kind === 'bounty' ? ['賞金彈'] : finalDraw.map(({ multiplier }) => multiplier);
   ui['loot-disc'].replaceChildren(...values.map((value, index) => {
     const pocket = document.createElement('span');
     pocket.className = 'wheel-pocket';
@@ -298,13 +298,13 @@ async function spinReward(kind) {
   mode = 'loot';
   render();
   await pause(260);
-  const count = kind === 'ammo' ? 3 : kind === 'special' ? 2 : kind === 'bounty' ? 1 : finalDraw.length;
+  const count = kind === 'ammo' ? 3 : kind === 'special' ? 3 : kind === 'bounty' ? 1 : finalDraw.length;
   const step = 360 / count;
   const end = 1440 + (360 - index * step);
   const animation = ui['loot-disc'].animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + end + 'deg)' }], { duration: reducedMotion.matches ? 0 : 1100, easing: 'cubic-bezier(.17,.62,.24,1)' });
   await animation.finished;
   ui['loot-disc'].style.transform = 'rotate(' + end + 'deg)';
-  text('loot-result', kind === 'ammo' ? '補充 ' + value + ' 發' : kind === 'special' ? '取得 ' + (value === 'crit' ? '爆擊彈' : '冰凍彈') : kind === 'bounty' ? '取得 賞金彈' : '抽到 ' + multiplierText(value));
+  text('loot-result', kind === 'ammo' ? '補充 ' + value + ' 發' : kind === 'special' ? '取得 ' + ({ crit: '爆擊彈', freeze: '冰凍彈', bounty: '賞金彈' }[value]) : kind === 'bounty' ? '取得 賞金彈' : '抽到 ' + multiplierText(value));
   revolverAudio.play('lock');
   await pause(650);
   ui.loot.hidden = true;
@@ -352,7 +352,7 @@ async function fire() {
     } else if (choice === 'special') {
       pocket[await spinReward('special')]++;
     } else {
-      pocket[await spinReward('bounty')]++;
+      bountyBonus = Number((bountyBonus + .2).toFixed(1));
     }
     round++;
     selected = null;

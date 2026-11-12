@@ -11,8 +11,9 @@ const revolverRules = (() => {
     { value: 2, weight: 35 },
   ];
   const specialDraw = [
-    { type: 'crit', weight: 50 },
-    { type: 'freeze', weight: 50 },
+    { type: 'crit', weight: 34 },
+    { type: 'freeze', weight: 33 },
+    { type: 'bounty', weight: 33 },
   ];
   const finalDraw = [
     { multiplier: 1, weight: 40 },
