@@ -24,9 +24,9 @@ const revolverRules = (() => {
     { type: 'normal', amount: 2, weight: 10 },
   ];
   const specialQuantityDraw = [
-    { amount: 1, weight: 56 },
-    { amount: 2, weight: 30 },
-    { amount: 3, weight: 14 },
+    { amount: 1, weight: 50 },
+    { amount: 2, weight: 32 },
+    { amount: 3, weight: 18 },
   ];
   const bountyDraw = [
     { bonus: 0.2, weight: 60 },

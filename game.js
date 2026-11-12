@@ -7,7 +7,7 @@ const money = value => '$' + value.toLocaleString('en-US');
 const multiplierText = value => value.toLocaleString('zh-TW', { maximumFractionDigits: 1 }) + 'X';
 const baseReward = 100;
 const targetOptions = ['ammo', 'bonus', 'crit', 'freeze', 'bounty'];
-const targetWeights = { ammo: 36, bonus: 24, crit: 14, freeze: 14, bounty: 12 };
+const targetWeights = { ammo: 42, bonus: 24, crit: 13, freeze: 12, bounty: 9 };
 const targetData = {
   ammo: { name: '補給殭屍', art: 'assets/zombie-supply-v2.png', icon: 'assets/zombie-supply-v2.png', rule: '命中後抽普通彈', hint: '你在追逐彈藥。命中後會轉出 +1、+2 或 +3。', tag: 'SUPPLY TARGET' },
   bonus: { name: '賞金殭屍', art: 'assets/zombie-bounty-v2.png', icon: 'assets/zombie-bounty-v2.png', rule: '命中後抽獎金', hint: '你在追逐獎金。命中後轉出 +0.2X、+0.5X 或 +1.0X。', tag: 'BOUNTY TARGET' },
