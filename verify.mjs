@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import rules from './rules.js';
 
-const { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, ammoDraw, specialDraw, bountyDraw, finalDraw,
+const { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, ammoDraw, specialDraw, specialQuantityDraw, bountyDraw, finalDraw,
   initialCylinder, countAmmo, loadRound, drawAmmo, drawSpecial, drawFinalMultiplier, chamberIndex } = rules;
 
 assert.equal(slots, 6);
@@ -15,6 +15,8 @@ assert.deepEqual(ammoDraw.map(({ value }) => value), [1, 2, 3]);
 assert.deepEqual(ammoDraw.map(({ weight }) => weight), [50, 35, 15]);
 assert.equal(specialDraw.length, 11);
 assert.deepEqual(specialDraw.slice(0, 3).map(({ type, amount }) => [type, amount]), [['crit', 1], ['crit', 2], ['crit', 3]]);
+assert.deepEqual(specialQuantityDraw.map(({ amount }) => amount), [1, 2, 3]);
+assert.deepEqual(specialQuantityDraw.map(({ weight }) => weight), [56, 30, 14]);
 assert.deepEqual(bountyDraw.map(({ bonus }) => bonus), [0.2, 0.5, 1]);
 assert.deepEqual(bountyDraw.map(({ weight }) => weight), [60, 30, 10]);
 assert.deepEqual(finalDraw.map(({ multiplier }) => multiplier), [1, 2, 3, 5, 10]);

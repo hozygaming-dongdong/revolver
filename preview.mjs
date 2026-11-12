@@ -5,6 +5,7 @@ import { extname } from 'node:path';
 const files = new Set(['index.html', 'game.js', 'rules.js', 'audio.js', 'style.css', 'assets/corridor.webp', 'assets/zombie.webp',
   'assets/cylinder-ui.webp', 'assets/ammo-cache.webp', 'assets/bounty-token.webp',
   'assets/gunslinger.png', 'assets/coin.png', 'assets/cartridge.png', 'assets/boss.webp', 'assets/boss-runner.webp', 'assets/boss-armored.webp',
+  'assets/vault-bg-v2.png', 'assets/boss-v2.png', 'assets/cylinder-v2.png', 'assets/special-ammo-sheet-v2.png', 'assets/zombie-supply-v2.png', 'assets/zombie-special-v2.png', 'assets/zombie-bounty-v2.png',
   'assets/chest-bronze.png', 'assets/chest-silver.png', 'assets/chest-gold.png', 'assets/final-cache.webp',
   'assets/vault-coin.jpg', 'assets/vault-ammo.jpg', 'assets/reward-empty.webp',
   ...['coin', 'cash'].flatMap(kind => Array.from({ length: 4 }, (_, tier) => `assets/reward-${kind}-${tier}.webp`))]);

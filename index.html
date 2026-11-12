@@ -3,120 +3,67 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#120b08">
-  <meta name="description" content="REVOLVER 左輪追獵：選目標、轉彈巢、一路拚到最高 10X。">
+  <meta name="theme-color" content="#0c0e11">
+  <meta name="description" content="REVOLVER 左輪追獵：選擇目標，押上彈藥，轉動彈巢。">
   <title>REVOLVER · 左輪追獵</title>
-  <link rel="preload" as="image" href="assets/corridor.webp" fetchpriority="high">
-  <link rel="stylesheet" href="style.css?v=rules-demo-1">
-  <script defer src="rules.js?v=rules-demo-4"></script>
+  <link rel="preload" as="image" href="assets/vault-bg-v2.png" fetchpriority="high">
+  <link rel="stylesheet" href="style.css?v=reforge-1">
+  <script defer src="rules.js?v=reforge-1"></script>
   <script defer src="audio.js?v=demo-2"></script>
-  <script defer src="game.js?v=rules-demo-4"></script>
+  <script defer src="game.js?v=reforge-1"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
     <header class="hud">
-      <div class="brand"><span>REVOLVER</span><small>左輪追獵</small></div>
-      <div class="hud-stats">
-        <div><span>回合</span><strong id="round-number">—</strong></div>
-        <div class="ammo-meter"><img src="assets/cartridge.png" alt=""><strong id="ammo">6</strong><small>/ 6</small></div>
-        <div class="up-meter"><img src="assets/bounty-token.webp" alt=""><strong id="up">0</strong><small>口袋</small></div>
+      <div class="brand"><span>REVOLVER</span><small>封鎖區 · 追獵協議</small></div>
+      <div class="hud-pills">
+        <div class="hud-pill"><span>ROUND</span><strong id="round-number">—</strong><small>/ 8</small></div>
+        <div class="hud-pill ammo-pill"><img src="assets/cartridge.png" alt=""><strong id="ammo">6</strong><small>/ 6</small></div>
+        <div class="hud-pill bonus-pill"><img src="assets/bounty-token.webp" alt=""><strong id="up">0.0</strong><small>X</small></div>
       </div>
-      <div class="jackpot"><span>FINAL PRIZE</span><strong>WIN UP TO 10X</strong></div>
+      <div class="prize-bar"><span>FINAL PRIZE</span><strong>WIN UP TO 10X</strong></div>
       <ol class="progress" id="progress" aria-label="八回合追獵進度"></ol>
     </header>
 
     <section class="arena" id="arena">
       <div class="backdrop-number" aria-hidden="true">08</div>
-      <div class="route" id="route" aria-label="追獵路線">
-        <span class="route-label">追獵目標</span>
-        <div class="route-line"><i id="route-dot"></i></div>
-        <strong id="route-title">進入封鎖區</strong>
-      </div>
+      <div class="route" id="route" aria-label="追獵進度"><span class="route-label">LOCKDOWN RUN</span><div class="route-line"><i id="route-dot"></i></div><strong id="route-title">準備進入封鎖區</strong></div>
 
       <section class="intro" id="intro">
-        <img src="assets/boss.webp" alt="" class="intro-boss">
-        <div class="intro-prize"><span>WIN UP TO</span><strong>10X</strong></div>
-        <h1>每一槍<br>都離獎金更近</h1>
-        <div class="intro-icons"><span><img src="assets/ammo-cache.webp" alt="">補給</span><span><img src="assets/bounty-token.webp" alt="">賞金</span><span><img src="assets/final-cache.webp" alt="">終點</span></div>
-        <button class="primary" id="start" type="button">開始追獵</button>
+        <div class="intro-copy"><span class="eyebrow">THE LAST CHAMBER</span><h1>你追的不是殭屍<br><em>是下一次命中。</em></h1><p>選一扇門。轉一次彈巢。每一發都把你推向最後的 10X。</p></div>
+        <div class="intro-boss-wrap"><img src="assets/boss-v2.png" alt="封鎖區 Boss" class="intro-boss"></div>
+        <div class="intro-legend"><span><i class="legend-dot ammo"></i>穩住彈藥</span><span><i class="legend-dot special"></i>組合特殊彈</span><span><i class="legend-dot bonus"></i>放大獎金</span></div>
+        <button class="primary" id="start" type="button"><span>開始追獵</span><b>→</b></button>
       </section>
 
       <section class="hunt" id="hunt" hidden>
         <section class="door-select" id="door-select">
-          <div class="state-title"><span class="state-icon">⌖</span><div><span class="eyebrow">下一步</span><strong>選擇要追逐的獎勵</strong></div></div>
-          <div class="door-row" id="choice-row">
-            <button class="choice-card ammo-choice" id="choice-ammo" type="button">
-              <span class="door-scene"><span class="door-emblem"><img src="assets/ammo-cache.webp" alt=""></span><span class="door-mark">SUPPLY</span><span class="door-handle"></span></span>
-              <span class="choice-name"><img src="assets/ammo-cache.webp" alt="">補給殭屍</span>
-              <small>擊殺後抽普通彈<br>+1 / +2 / +3</small>
-            </button>
-            <button class="choice-card special-choice" id="choice-special" type="button">
-              <span class="door-scene"><span class="door-emblem"><img src="assets/cylinder-ui.webp" alt=""></span><span class="door-mark">SPECIAL</span><span class="door-handle"></span></span>
-              <span class="choice-name"><img src="assets/cylinder-ui.webp" alt="">特殊彈殭屍</span>
-              <small>命中後抽取<br>爆擊、冰凍或賞金彈</small>
-            </button>
-            <button class="choice-card bonus-choice" id="choice-bonus" type="button">
-              <span class="door-scene"><span class="door-emblem"><img src="assets/bounty-token.webp" alt=""></span><span class="door-mark">BOUNTY</span><span class="door-handle"></span></span>
-              <span class="choice-name"><img src="assets/bounty-token.webp" alt="">賞金殭屍</span>
-              <small>擊殺後抽取<br>+0.2X / +0.5X / +1.0X</small>
-            </button>
+          <div class="objective-card"><div class="objective-icon">01</div><div><span class="eyebrow">YOUR NEXT DECISION</span><strong>先選你要帶走的東西</strong><small>資源、組合，或獎金。選定後才會看見目標。</small></div></div>
+          <div class="choice-row" id="choice-row">
+            <button class="choice-card choice-ammo" id="choice-ammo" type="button"><span class="choice-art"><img src="assets/zombie-supply-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>SUPPLY</b><i>補給殭屍</i></span><strong>+1 / +2 / +3</strong><small>普通彈藥</small></button>
+            <button class="choice-card choice-bonus" id="choice-bonus" type="button"><span class="choice-art"><img src="assets/zombie-bounty-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>BOUNTY</b><i>賞金殭屍</i></span><strong>+0.2 / +0.5 / +1.0X</strong><small>獎金加成</small></button>
+            <button class="choice-card choice-crit" id="choice-crit" type="button"><span class="choice-art"><img src="assets/zombie-special-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>CRIT</b><i>爆擊彈殭屍</i></span><strong>×1 / ×2 / ×3</strong><small>爆擊彈</small></button>
+            <button class="choice-card choice-freeze" id="choice-freeze" type="button"><span class="choice-art"><img src="assets/zombie-special-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>FREEZE</b><i>冰凍彈殭屍</i></span><strong>×1 / ×2 / ×3</strong><small>冰凍彈</small></button>
+            <button class="choice-card choice-bounty-ammo" id="choice-bounty" type="button"><span class="choice-art"><img src="assets/zombie-bounty-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>GOLD SHELL</b><i>賞金彈殭屍</i></span><strong>×1 / ×2 / ×3</strong><small>賞金彈</small></button>
           </div>
-          <p class="state-help"><img src="assets/cylinder-ui.webp" alt="">先選門，再進入決鬥</p>
+          <p class="decision-note"><span class="decision-pulse"></span><b>你的選擇會決定下一次抽選</b><span>選門 → 進入目標區 → 轉彈巢</span></p>
         </section>
 
         <section class="fight-stage" id="fight-stage" hidden>
-          <div class="encounter-brief"><img id="target-icon" src="assets/ammo-cache.webp" alt=""><div><span class="eyebrow">已進入目標區</span><strong id="target-name">補給殭屍</strong></div><span class="encounter-arrow">→</span><span class="encounter-action">擊殺目標</span></div>
-          <div class="boss-status" id="boss-status" hidden><span>Boss HP <b id="boss-hp">3</b> / 3</span><span>攻擊倒數 <b id="boss-clock">3</b></span></div>
-          <div class="boss-load" id="boss-load" hidden>
-            <span class="load-title">開槍前裝填一顆特殊彈</span>
-            <div class="load-options">
-              <button id="load-crit" type="button"><img src="assets/cartridge.png" alt=""><b>爆擊 <small id="load-crit-count">0</small></b></button>
-              <button id="load-freeze" type="button"><img src="assets/cartridge.png" alt=""><b>冰凍 <small id="load-freeze-count">0</small></b></button>
-              <button id="load-bounty" type="button"><img src="assets/bounty-token.webp" alt=""><b>賞金 <small id="load-bounty-count">0</small></b></button>
-              <button class="load-skip" id="load-skip" type="button">不裝填<br><small>直接開槍</small></button>
-            </div>
-          </div>
-          <div class="enemy-stage" id="enemy-stage">
-            <div class="enemy-glow"></div>
-            <img id="enemy-art" src="assets/boss-runner.webp" alt="本回合目標">
-            <span class="crosshair" id="crosshair" aria-hidden="true"></span>
-            <div class="hit-flash" id="hit-flash"></div>
-          </div>
+          <div class="encounter-head"><img id="target-icon" src="assets/zombie-supply-v2.png" alt=""><div class="encounter-mark"><span id="target-index">02</span><i></i></div><div><span class="eyebrow" id="encounter-kicker">TARGET ACQUIRED</span><strong id="target-name">補給殭屍</strong></div><span class="encounter-rule" id="encounter-rule">命中後抽取獎勵</span></div>
+          <div class="boss-status" id="boss-status" hidden><span><b id="boss-hp">3</b><small>/ 3 HP</small></span><i></i><span><b id="boss-clock">3</b><small>攻擊倒數</small></span></div>
+          <div class="boss-load" id="boss-load" hidden><div class="load-heading"><span class="eyebrow">LOADOUT</span><strong>開槍前，決定這一發要押什麼</strong></div><div class="load-options"><button id="load-crit" type="button"><span class="ammo-icon crit"></span><b>爆擊 <small id="load-crit-count">0</small></b></button><button id="load-freeze" type="button"><span class="ammo-icon freeze"></span><b>冰凍 <small id="load-freeze-count">0</small></b></button><button id="load-bounty" type="button"><span class="ammo-icon bounty"></span><b>賞金 <small id="load-bounty-count">0</small></b></button><button class="load-skip" id="load-skip" type="button"><b>跳過裝填</b><small>直接轉彈巢</small></button></div></div>
+          <div class="enemy-stage" id="enemy-stage"><div class="enemy-vignette"></div><div class="enemy-beam"></div><img id="enemy-art" src="assets/zombie-supply-v2.png" alt="本回合目標"><span class="crosshair" id="crosshair" aria-hidden="true"></span><div class="hit-flash" id="hit-flash"></div><span class="enemy-tag" id="enemy-tag">LIVE TARGET</span></div>
         </section>
       </section>
 
-      <section class="result" id="result" hidden>
-        <img src="assets/final-cache.webp" alt="" class="result-cache" loading="lazy">
-        <p class="eyebrow" id="result-kicker">任務結束</p>
-        <h1 id="result-title"></h1>
-        <strong class="result-payout" id="result-payout">$0</strong>
-        <p id="result-detail"></p>
-        <button class="primary" id="restart" type="button">再玩一輪</button>
-      </section>
+      <section class="result" id="result" hidden><span class="result-seal">RUN COMPLETE</span><img src="assets/bounty-token.webp" alt="獎金" class="result-token"><p class="eyebrow" id="result-kicker">任務結束</p><h1 id="result-title"></h1><strong class="result-payout" id="result-payout">$0</strong><p id="result-detail"></p><button class="primary" id="restart" type="button"><span>再玩一輪</span><b>↻</b></button></section>
 
-      <section class="weapon-panel" id="weapon-panel" hidden>
-        <div class="weapon-label"><span>彈巢</span><strong id="shot-state">選擇目標</strong></div>
-        <div class="weapon" id="weapon">
-          <span class="cylinder-pointer" aria-hidden="true"></span>
-          <div class="cylinder" id="cylinder" aria-label="六格彈巢"></div>
-        </div>
-        <button class="fire-button" id="fire" type="button" disabled><span>FIRE</span><small>選目標後開槍</small></button>
-      </section>
+      <section class="weapon-panel" id="weapon-panel" hidden><div class="weapon-context"><span class="eyebrow">THE CHAMBER DECIDES</span><strong id="shot-state">選擇目標</strong><small id="weapon-help">六格中，只有你看不見下一格。</small></div><div class="weapon-wrap"><div class="weapon" id="weapon"><span class="cylinder-pointer" aria-hidden="true"></span><div class="cylinder" id="cylinder" aria-label="六格彈巢"></div></div><div class="cylinder-caption"><span>6 CHAMBERS</span><b>RANDOM LOAD</b></div></div><button class="fire-button" id="fire" type="button" disabled><span>FIRE</span><small>選目標後開槍</small></button></section>
 
       <div class="hint" id="hint" role="status"></div>
 
-      <section class="loot-overlay" id="loot" aria-live="polite" hidden>
-        <div class="loot-panel">
-          <p class="eyebrow" id="loot-kicker">獎勵抽選</p>
-          <h2 id="loot-title">彈藥</h2>
-          <div class="loot-wheel" id="loot-wheel">
-            <span class="wheel-pointer" aria-hidden="true"></span>
-            <div class="loot-disc" id="loot-disc"></div>
-            <div class="wheel-core"><img id="loot-core" src="assets/cartridge.png" alt=""></div>
-          </div>
-          <strong class="loot-result" id="loot-result"></strong>
-        </div>
-      </section>
+      <section class="loot-overlay" id="loot" aria-live="polite" hidden><div class="loot-panel"><div class="loot-eyebrow"><span class="eyebrow" id="loot-kicker">REWARD DRAW</span><span id="loot-round">NOW</span></div><h2 id="loot-title">戰利品抽選</h2><div class="loot-wheel" id="loot-wheel"><span class="wheel-pointer" aria-hidden="true"></span><div class="loot-disc" id="loot-disc"></div><div class="wheel-core"><img id="loot-core" src="assets/cylinder-v2.png" alt=""></div></div><strong class="loot-result" id="loot-result"></strong><small class="loot-sub">結果會立刻加入你的配置</small></div></section>
     </section>
   </main>
 </body>
