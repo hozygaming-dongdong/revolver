@@ -7,10 +7,10 @@
   <meta name="description" content="REVOLVER 左輪追獵：選擇目標，押上彈藥，轉動彈巢。">
   <title>REVOLVER · 左輪追獵</title>
   <link rel="preload" as="image" href="assets/vault-bg-v2.png" fetchpriority="high">
-  <link rel="stylesheet" href="style.css?v=reforge-3">
+  <link rel="stylesheet" href="style.css?v=reforge-4">
   <script defer src="rules.js?v=reforge-2"></script>
   <script defer src="audio.js?v=demo-2"></script>
-  <script defer src="game.js?v=reforge-2"></script>
+  <script defer src="game.js?v=reforge-4"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -40,11 +40,11 @@
         <section class="door-select" id="door-select">
           <div class="objective-card"><div class="objective-icon">01</div><div><span class="eyebrow">YOUR NEXT DECISION</span><strong>先選你要帶走的東西</strong><small>資源、組合，或獎金。選定後才會看見目標。</small></div></div>
           <div class="choice-row" id="choice-row">
-            <button class="choice-card choice-ammo" id="choice-ammo" type="button"><span class="choice-art"><img src="assets/zombie-supply-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>SUPPLY</b><i>補給殭屍</i></span><strong>+1 / +2 / +3</strong><small>普通彈藥</small></button>
-            <button class="choice-card choice-bonus" id="choice-bonus" type="button"><span class="choice-art"><img src="assets/zombie-bounty-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>BOUNTY</b><i>賞金殭屍</i></span><strong>+0.2 / +0.5 / +1.0X</strong><small>獎金加成</small></button>
-            <button class="choice-card choice-crit" id="choice-crit" type="button"><span class="choice-art"><img src="assets/zombie-special-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>CRIT</b><i>爆擊彈殭屍</i></span><strong>×1 / ×2 / ×3</strong><small>爆擊彈</small></button>
-            <button class="choice-card choice-freeze" id="choice-freeze" type="button"><span class="choice-art"><img src="assets/zombie-special-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>FREEZE</b><i>冰凍彈殭屍</i></span><strong>×1 / ×2 / ×3</strong><small>冰凍彈</small></button>
-            <button class="choice-card choice-bounty-ammo" id="choice-bounty" type="button"><span class="choice-art"><img src="assets/zombie-bounty-v2.png" alt=""><i class="choice-glint"></i></span><span class="choice-top"><b>GOLD SHELL</b><i>賞金彈殭屍</i></span><strong>×1 / ×2 / ×3</strong><small>賞金彈</small></button>
+            <button class="choice-card choice-ammo" id="choice-ammo" type="button"><span class="choice-art"><img src="assets/ammo-cache.webp" alt=""><i class="choice-glint"></i><b class="door-glyph">SUPPLY</b></span><span class="choice-top"><b>DOOR 01</b><i>物資線索</i></span><strong>補給</strong><small>門後可能藏著普通彈</small></button>
+            <button class="choice-card choice-bonus" id="choice-bonus" type="button"><span class="choice-art"><img src="assets/bounty-token.webp" alt=""><i class="choice-glint"></i><b class="door-glyph">BOUNTY</b></span><span class="choice-top"><b>DOOR 02</b><i>賞金線索</i></span><strong>獎金</strong><small>門後可能藏著獎金加成</small></button>
+            <button class="choice-card choice-crit" id="choice-crit" type="button"><span class="choice-art"><img src="assets/special-ammo-sheet-v2.png" alt=""><i class="choice-glint"></i><b class="door-glyph">EMBER</b></span><span class="choice-top"><b>DOOR 03</b><i>紅焰線索</i></span><strong>特殊彈</strong><small>門後可能藏著爆擊彈</small></button>
+            <button class="choice-card choice-freeze" id="choice-freeze" type="button"><span class="choice-art"><img src="assets/special-ammo-sheet-v2.png" alt=""><i class="choice-glint"></i><b class="door-glyph">FROST</b></span><span class="choice-top"><b>DOOR 04</b><i>霜印線索</i></span><strong>特殊彈</strong><small>門後可能藏著冰凍彈</small></button>
+            <button class="choice-card choice-bounty-ammo" id="choice-bounty" type="button"><span class="choice-art"><img src="assets/bounty-token.webp" alt=""><i class="choice-glint"></i><b class="door-glyph">GOLD</b></span><span class="choice-top"><b>DOOR 05</b><i>金殼線索</i></span><strong>特殊彈</strong><small>門後可能藏著賞金彈</small></button>
           </div>
           <p class="decision-note"><span class="decision-pulse"></span><b>你的選擇會決定下一次抽選</b><span>選門 → 進入目標區 → 轉彈巢</span></p>
         </section>

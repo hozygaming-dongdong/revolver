@@ -52,8 +52,7 @@ function weightedSample(values, amount) {
   return result;
 }
 function chooseOptions() {
-  const amount = round <= 2 ? 3 : 2;
-  const next = weightedSample(targetOptions, amount);
+  const next = weightedSample(targetOptions, 2);
   if (countAmmo(chambers) < 2 && !next.includes('ammo')) next[0] = 'ammo';
   return next;
 }
@@ -133,7 +132,7 @@ function reset() {
 }
 
 function start() {
-  revolverAudio.unlock(); revolverAudio.startMusic(); mode = 'doors'; round = 1; selected = null; chambers = initialCylinder(); options = [...targetOptions]; pocket = { crit: 0, freeze: 0, bounty: 0 }; bountyBonus = 0; setHint('第一步：選擇你現在最想累積的資源。'); render();
+  revolverAudio.unlock(); revolverAudio.startMusic(); mode = 'doors'; round = 1; selected = null; chambers = initialCylinder(); options = chooseOptions(); pocket = { crit: 0, freeze: 0, bounty: 0 }; bountyBonus = 0; setHint('兩扇門，選一個你願意押上的方向。'); render();
 }
 
 async function selectChoice(choice) {
