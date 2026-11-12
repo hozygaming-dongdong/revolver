@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=16">
-  <script defer src="rules.js?v=14"></script>
+  <link rel="stylesheet" href="style.css?v=17">
+  <script defer src="rules.js?v=17"></script>
   <script defer src="audio.js?v=5"></script>
-  <script defer src="game.js?v=16"></script>
+  <script defer src="game.js?v=17"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -107,6 +107,7 @@
         <button class="primary" id="primary" type="button">
           <img src="assets/cartridge.png" width="40" height="40" alt=""><span id="primary-text">開始遊戲</span>
         </button>
+        <button class="forfeit-boss" id="forfeit-boss" type="button" hidden>放棄本輪</button>
         <p class="hint" id="hint" role="status"></p>
       </div>
       <section class="loot-overlay" id="loot" aria-labelledby="loot-title" hidden>
@@ -154,6 +155,7 @@
     <p>兩個庫各自抽出銅箱 45%、銀箱 43%、金箱 12%。金幣金箱至少開出 1.5×。軍械庫銅箱有 5% 機率開空，銀箱至少補 1 發，金箱至少補 2 發。</p>
     <p>前五關選庫時，每發可用押注的 20% 加購，付費最多補到 3 發。</p>
     <p>第六關最多開 4 槍，需命中 3 次。進入首領戰時至少要有 3 發彈藥。</p>
+    <p>第五關結束時若不足 3 發，可在首領開戰前一次補齊，每發仍為押注的 20%。放棄補彈會結束本輪。</p>
     <p>打贏首領後，最終寶箱的基礎獎金乘上累積倍率。基礎獎金至少返還押注及補彈費，最高為原押注的 10×。首領戰失敗，倍率不結算，本局投入不退回。</p>
     <form method="dialog"><button class="primary">返回遊戲</button></form>
   </dialog>

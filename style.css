@@ -226,6 +226,10 @@ button:not(:disabled):active { filter: brightness(1.24); }
 }
 .primary img { object-fit: contain; }
 .primary:disabled { opacity: .77; }
+.forfeit-boss {
+  min-height: 44px; padding: 0 14px; border: 0; background: transparent; color: #e6c6a6;
+  font-size: .78rem; font-weight: 700;
+}
 .hint { margin: 0; min-height: 17px; color: #e6c6a6; font-size: .73rem; font-weight: 600; text-shadow: 0 1px 4px #000; text-align: center; }
 .hint:empty { display: none; }
 .arena:is([data-scene='vault'], [data-scene='fight']) .hint:empty { display: block; }

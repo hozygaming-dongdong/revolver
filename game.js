@@ -1,5 +1,5 @@
 const {
-  slots, finalStage, bossShotLimit, bossHealth, initialCylinder, countAmmo, canBuy, loadAmmo,
+  slots, finalStage, bossShotLimit, bossHealth, initialCylinder, countAmmo, ammoPurchaseCount, loadAmmo,
   chamberIndex, shoot, price, encounters, chestTiers, coinMultipliers, maxBaseMultiplier,
   supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex,
 } = revolverRules;
@@ -64,17 +64,20 @@ function render() {
   const transitioning = mode === 'transition';
   const opening = mode === 'entering';
   const attacking = mode === 'boss-attack';
-  const busy = spinning || looting || transitioning || opening || attacking;
+  const bossSupply = mode === 'boss-supply';
+  const bossReload = mode === 'boss-reload';
+  const busy = spinning || looting || transitioning || opening || attacking || bossReload;
   const playing = !ready && !finished;
   const atBoss = stage === finalStage;
   const selecting = mode === 'vault';
   const choosing = selecting || opening || (transitioning && !atBoss && !selectedVault);
   const fighting = playing && !choosing;
-  const showBossProgress = fighting && atBoss && !transitioning;
+  const showBossProgress = fighting && atBoss && !transitioning && !bossSupply && !bossReload;
   const inVault = fighting && !atBoss && Boolean(selectedVault);
   const target = inVault ? targets[stage - 1][selectedVault] : null;
   const needsReset = ready && balance < bets[0];
-  const cost = price(bet);
+  const purchaseCount = ammoPurchaseCount(ammo, opening ? 'vault' : mode);
+  const cost = price(bet) * purchaseCount;
   const ammoShortage = bossHealth - ammo;
   ui.game.dataset.mode = mode;
   ui.arena.dataset.scene = ready ? 'intro' : finished ? 'settlement' : choosing ? 'vault' : 'fight';
@@ -93,22 +96,30 @@ function render() {
   ui.loot.hidden = !looting;
   ui['stage-transition'].hidden = !transitioning;
   ui.primary.hidden = playing && !atBoss;
-  ui.primary.disabled = busy || needsReset;
+  ui.primary.disabled = busy || needsReset || (bossSupply && balance < cost);
+  ui['forfeit-boss'].hidden = !bossSupply && !bossReload;
+  ui['forfeit-boss'].disabled = busy;
   ui.skip.disabled = busy;
   ui.fire.disabled = busy || ammo === 0;
-  ui.buy.hidden = !(selecting || opening) || !canBuy(ammo, 'vault');
+  ui.buy.hidden = bossSupply || purchaseCount === 0;
   ui.buy.disabled = busy || balance < cost;
   ui['open-menu'].disabled = busy;
   ui['reset-assets'].disabled = busy;
   ui['bet-down'].disabled = !ready || betIndex === 0;
   ui['bet-up'].disabled = !ready || betIndex === bets.length - 1;
-  text('primary-text', ready ? (balance < bet && !needsReset ? '切換最低押注' : '開始遊戲') : finished ? '再玩一輪' : spinning ? '射擊中' : 'FIRE');
+  text('primary-text', ready ? (balance < bet && !needsReset ? '切換最低押注' : '開始遊戲')
+    : finished ? '再玩一輪'
+    : bossSupply ? `補 ${purchaseCount} 發 · ${money(cost)}`
+    : bossReload ? '補彈中'
+    : spinning ? '射擊中' : 'FIRE');
   text('balance', money(balance));
   text('bet', money(bet));
   text('ammo', `${ammo} / ${slots}`);
-  ui['boss-ammo'].hidden = !playing || atBoss || ammoShortage <= 0;
+  ui['boss-ammo'].hidden = !playing || (atBoss && !bossSupply) || ammoShortage <= 0;
   text('boss-ammo', ammoShortage > 0 ? `首領戰缺 ${ammoShortage} 發` : '');
-  text('hint', needsReset ? '餘額不足，請從選單重設資產' : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足` : hint);
+  text('hint', needsReset ? '餘額不足，請從選單重設資產'
+    : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足`
+    : bossSupply && balance < cost ? '餘額不足，無法補齊彈藥' : hint);
   const resetAmount = money(startingBalance);
   text('reset-note', busy ? '等待演出結束' : playing ? `結束本輪 · ${resetAmount}` : resetAmount);
   text('gate-number', String(stage).padStart(2, '0'));
@@ -137,7 +148,7 @@ function render() {
     }
   } else if (fighting && !transitioning) {
     if (atBoss) {
-      text('stage-plate', '封鎖區首領');
+      text('stage-plate', bossSupply || bossReload ? '首領門前' : '封鎖區首領');
     } else if (target) {
       const chest = chestTiers[target];
       const format = selectedVault === 'coin' ? i => multiplierText(coinMultipliers[i]) : ammoText;
@@ -400,13 +411,11 @@ async function advance(message) {
   revolverAudio.play('lock');
   render();
   await pause(duration / 2);
-  mode = enteringBoss ? 'boss' : 'vault';
-  if (enteringBoss) {
-    if (countAmmo(chambers) < bossHealth) return bossAttack(`首領戰至少需要 ${bossHealth} 發彈藥`);
-    hint = '';
-  }
+  mode = enteringBoss ? (countAmmo(chambers) < bossHealth ? 'boss-supply' : 'boss') : 'vault';
+  if (enteringBoss) hint = '';
   render();
-  (enteringBoss ? ui.primary : ui['vault-coin']).focus({ preventScroll: true });
+  const nextControl = enteringBoss ? ui.primary : ui['vault-coin'];
+  (nextControl.disabled ? ui['forfeit-boss'] : nextControl).focus({ preventScroll: true });
 }
 
 function reload(amount) {
@@ -425,13 +434,23 @@ function reload(amount) {
   return added;
 }
 
-function buyAmmo() {
-  const cost = price(bets[betIndex]);
-  if (!canBuy(countAmmo(chambers), mode) || balance < cost) return;
+async function buyAmmo() {
+  const amount = ammoPurchaseCount(countAmmo(chambers), mode);
+  const cost = price(bets[betIndex]) * amount;
+  if (!amount || balance < cost) return;
   balance -= cost;
   spentOnAmmo += cost;
-  reload(1);
+  reload(amount);
   hint = `補彈完成 · 已扣 ${money(cost)}`;
+  if (mode === 'boss-supply') {
+    mode = 'boss-reload';
+    render();
+    await wait(300);
+    mode = 'boss';
+    render();
+    ui.primary.focus({ preventScroll: true });
+    return;
+  }
   render();
 }
 
@@ -452,8 +471,12 @@ function resetRound() {
 
 ui.primary.addEventListener('click', () => {
   if (mode === 'ready') start();
+  else if (mode === 'boss-supply') buyAmmo();
   else if (mode === 'boss') fire();
   else if (mode === 'result') resetRound();
+});
+ui['forfeit-boss'].addEventListener('click', () => {
+  if (mode === 'boss-supply') bossAttack('已放棄首領挑戰');
 });
 for (const [id, step] of [['bet-down', -1], ['bet-up', 1]]) {
   ui[id].addEventListener('click', () => { betIndex += step; render(); });

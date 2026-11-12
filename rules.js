@@ -19,6 +19,7 @@ const revolverRules = (() => {
   const countAmmo = chambers => chambers.filter(Boolean).length;
   const price = bet => bet / 5;
   const canBuy = (ammo, mode) => mode === 'vault' && ammo < 3;
+  const ammoPurchaseCount = (ammo, mode) => mode === 'boss-supply' ? Math.max(0, bossHealth - ammo) : Number(canBuy(ammo, mode));
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
 
   function loadAmmo(chambers, amount = 1) {
@@ -75,7 +76,7 @@ const revolverRules = (() => {
 
   return {
     slots, startAmmo, ammoLimit, finalStage, bossShotLimit, bossHealth, chestTiers, coinMultipliers, maxBaseMultiplier,
-    initialCylinder, countAmmo, price, canBuy, chamberIndex, loadAmmo, shoot, encounters,
+    initialCylinder, countAmmo, price, canBuy, ammoPurchaseCount, chamberIndex, loadAmmo, shoot, encounters,
     supplyWheel, coinWheel, stackMultiplier, finalWheel, weightedIndex,
   };
 })();
