@@ -7,7 +7,7 @@
   <meta name="description" content="REVOLVER 左輪追獵：選目標、轉彈巢、一路拚到最高 10X。">
   <title>REVOLVER · 左輪追獵</title>
   <link rel="preload" as="image" href="assets/corridor.webp" fetchpriority="high">
-  <link rel="stylesheet" href="style.css?v=demo-2">
+  <link rel="stylesheet" href="style.css?v=demo-3">
   <script defer src="rules.js?v=demo-2"></script>
   <script defer src="audio.js?v=demo-2"></script>
   <script defer src="game.js?v=demo-2"></script>
@@ -42,23 +42,23 @@
       </section>
 
       <section class="hunt" id="hunt" hidden>
+        <div class="hunt-heading"><span class="eyebrow">選擇追獵目標</span><strong>開槍擊殺，換取你的路線獎勵</strong></div>
         <div class="enemy-stage" id="enemy-stage">
-          <div class="enemy-glow"></div>
-          <img id="enemy-art" src="assets/zombie.webp" alt="本回合目標">
-          <span class="crosshair" id="crosshair" aria-hidden="true"></span>
+          <div class="choice-row" id="choice-row">
+            <button class="choice-card ammo-choice" id="choice-ammo" type="button">
+              <span class="door-label"><img src="assets/ammo-cache.webp" alt=""><b>補彈門</b></span>
+              <span class="door-scene"><span class="door-glow"></span><img src="assets/boss-runner.webp" alt="補彈殭屍"><i class="door-crosshair" aria-hidden="true"></i></span>
+              <span class="choice-name">彈藥殭屍</span>
+              <small>擊殺後轉輪抽 +0 / +1 / +2</small>
+            </button>
+            <button class="choice-card bonus-choice" id="choice-bonus" type="button">
+              <span class="door-label"><img src="assets/bounty-token.webp" alt=""><b>獎金門</b></span>
+              <span class="door-scene"><span class="door-glow"></span><img src="assets/boss-armored.webp" alt="獎金殭屍"><i class="door-crosshair" aria-hidden="true"></i></span>
+              <span class="choice-name">獎金殭屍</span>
+              <small>擊殺後累積一層 UP</small>
+            </button>
+          </div>
           <div class="hit-flash" id="hit-flash"></div>
-        </div>
-        <div class="choice-row" id="choice-row">
-          <button class="choice-card ammo-choice" id="choice-ammo" type="button">
-            <span class="card-icon"><img src="assets/ammo-cache.webp" alt=""></span>
-            <span class="choice-name">補彈</span>
-            <small>轉輪抽 +0 / +1 / +2</small>
-          </button>
-          <button class="choice-card bonus-choice" id="choice-bonus" type="button">
-            <span class="card-icon"><img src="assets/bounty-token.webp" alt=""></span>
-            <span class="choice-name">獎金 UP</span>
-            <small>累積一層，拚最後倍率</small>
-          </button>
         </div>
       </section>
 
