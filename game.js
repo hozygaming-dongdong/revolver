@@ -13,7 +13,7 @@ const signed = value => `${value >= 0 ? '+' : '−'}${money(Math.abs(value))}`;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wait = ms => pause(reducedMotion.matches ? Math.min(ms, 140) : ms);
-const bets = [10_000, 20_000, 50_000, 100_000];
+const bets = [10_000, 20_000, 50_000, 100_000, 200_000];
 const startingBalance = 1_000_000;
 const chestArt = type => `assets/chest-${type}.png`;
 const finalCache = 'assets/final-cache.webp';
@@ -48,16 +48,11 @@ const chamberCells = chambers.map((_, i) => {
   ui.cylinder.append(cell);
   return cell;
 });
-const bossCounters = [
-  { value: 'boss-hits-left', marks: 'boss-hits', limit: bossHealth, remaining: () => hitsLeft },
-  { value: 'boss-shots-left', marks: 'boss-shots', limit: bossShotLimit, remaining: () => shotsLeft },
-];
-for (const counter of bossCounters) {
-  counter.cells = Array.from({ length: counter.limit }, () => document.createElement('i'));
-  ui[counter.marks].append(...counter.cells);
-}
+const healthBar = ui['boss-health'];
+const healthCells = Array.from({ length: bossHealth }, () => document.createElement('i'));
+healthBar.append(...healthCells);
+healthBar.setAttribute('aria-valuemax', bossHealth);
 text('intro-cap', multiplierText(maxBaseMultiplier));
-text('boss-ammo-label', `首領門檻 ${bossHealth} 發`);
 
 function render() {
   const bet = bets[betIndex];
@@ -75,12 +70,12 @@ function render() {
   const selecting = mode === 'vault';
   const choosing = selecting || opening || (transitioning && !atBoss && !selectedVault);
   const fighting = playing && !choosing;
+  const showBossProgress = fighting && atBoss && !transitioning;
   const inVault = fighting && !atBoss && Boolean(selectedVault);
   const target = inVault ? targets[stage - 1][selectedVault] : null;
   const needsReset = ready && balance < bets[0];
   const cost = price(bet);
   const ammoShortage = bossHealth - ammo;
-  const warnCoinShot = mode === 'encounter' && stage === finalStage - 1 && selectedVault === 'coin' && ammoShortage === 0;
   ui.game.dataset.mode = mode;
   ui.arena.dataset.scene = ready ? 'intro' : finished ? 'settlement' : choosing ? 'vault' : 'fight';
   ui.arena.dataset.target = fighting && atBoss ? 'boss' : target ?? '';
@@ -111,13 +106,9 @@ function render() {
   text('balance', money(balance));
   text('bet', money(bet));
   text('ammo', `${ammo} / ${slots}`);
-  ui['boss-ammo'].hidden = !playing || atBoss;
-  ui['boss-ammo'].classList.toggle('short', ammoShortage > 0);
-  text('boss-ammo-status', ammoShortage > 0 ? `還差 ${ammoShortage} 發` : '已達門檻');
-  ui.hint.classList.toggle('warning', warnCoinShot);
-  text('hint', needsReset ? '餘額不足，請從選單重設資產'
-    : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足`
-    : warnCoinShot ? `命中後剩 ${ammo - 1} 發，低於首領門檻` : hint);
+  ui['boss-ammo'].hidden = !playing || atBoss || ammoShortage <= 0;
+  text('boss-ammo', ammoShortage > 0 ? `首領戰缺 ${ammoShortage} 發` : '');
+  text('hint', needsReset ? '餘額不足，請從選單重設資產' : ready && balance < bet ? `目前押注 ${money(bet)}，餘額不足` : hint);
   const resetAmount = money(startingBalance);
   text('reset-note', busy ? '等待演出結束' : playing ? `結束本輪 · ${resetAmount}` : resetAmount);
   text('gate-number', String(stage).padStart(2, '0'));
@@ -127,7 +118,15 @@ function render() {
   text('jackpot-banner', `WIN UP TO ${multiplierText(maxBaseMultiplier * multiplier)}`);
   ui['chest-preview'].hidden = !target;
   ui['encounter-detail'].hidden = atBoss;
-  ui['boss-progress'].hidden = !atBoss;
+  ui['boss-progress'].hidden = !showBossProgress;
+  const healthParent = showBossProgress ? ui['boss-progress'] : stageCells[finalStage - 1];
+  if (healthBar.parentElement !== healthParent) {
+    if (showBossProgress) healthParent.prepend(healthBar);
+    else healthParent.append(healthBar);
+  }
+  healthBar.setAttribute('aria-valuenow', hitsLeft);
+  healthCells.forEach((cell, i) => cell.classList.toggle('remaining', i < hitsLeft));
+  text('boss-shots-left', shotsLeft);
   if (choosing) {
     for (const vault of ['coin', 'ammo']) {
       const door = ui[`vault-${vault}`];
@@ -139,11 +138,6 @@ function render() {
   } else if (fighting && !transitioning) {
     if (atBoss) {
       text('stage-plate', '封鎖區首領');
-      for (const counter of bossCounters) {
-        const remaining = counter.remaining();
-        text(counter.value, remaining);
-        counter.cells.forEach((cell, index) => cell.classList.toggle('remaining', index < remaining));
-      }
     } else if (target) {
       const chest = chestTiers[target];
       const format = selectedVault === 'coin' ? i => multiplierText(coinMultipliers[i]) : ammoText;

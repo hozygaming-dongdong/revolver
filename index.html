@@ -8,10 +8,10 @@
   <title>REVOLVER · 封鎖區</title>
   <link rel="preload" as="image" href="assets/vault-coin.jpg" fetchpriority="low">
   <link rel="preload" as="image" href="assets/vault-ammo.jpg" fetchpriority="low">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
   <script defer src="rules.js?v=14"></script>
   <script defer src="audio.js?v=5"></script>
-  <script defer src="game.js?v=15"></script>
+  <script defer src="game.js?v=16"></script>
 </head>
 <body>
   <main class="game" id="game" data-mode="ready">
@@ -43,12 +43,8 @@
         <div class="stage-plate"><img id="chest-preview" alt="" hidden><span id="stage-plate"></span></div>
         <p class="encounter-detail" id="encounter-detail"></p>
         <div class="boss-progress" id="boss-progress" role="group" aria-label="首領戰進度" hidden>
-          <div class="boss-counter boss-counter-hits">
-            <span>還需命中</span><strong id="boss-hits-left">3</strong><span class="boss-marks" id="boss-hits" aria-hidden="true"></span>
-          </div>
-          <div class="boss-counter boss-counter-shots">
-            <span>剩餘開槍</span><strong id="boss-shots-left">4</strong><span class="boss-marks" id="boss-shots" aria-hidden="true"></span>
-          </div>
+          <span class="boss-health" id="boss-health" role="meter" aria-label="首領血量" aria-valuemin="0"></span>
+          <span class="boss-shots">剩餘開槍 <strong id="boss-shots-left"></strong></span>
         </div>
       </div>
       <img class="enemy" id="enemy" src="assets/zombie.png" alt="" hidden>
@@ -96,7 +92,7 @@
         <div class="ammo-controls">
           <p class="ammo-readout">
             <span>彈藥 <strong id="ammo">3 / 6</strong></span>
-            <span class="boss-ammo" id="boss-ammo" hidden><span id="boss-ammo-label"></span><strong id="boss-ammo-status"></strong></span>
+            <span class="boss-ammo" id="boss-ammo" hidden></span>
           </p>
           <button class="buy-ammo" id="buy" type="button" hidden>加購 1 發 <small id="buy-cost"></small></button>
         </div>
