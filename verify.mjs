@@ -36,5 +36,9 @@ assert.deepEqual(drawSpecial(() => .8), { type: 'normal', amount: 1, weight: 18 
 assert.equal(drawFinalMultiplier(() => 0), 1);
 assert.equal(drawFinalMultiplier(() => .99), 10);
 assert.deepEqual([0, .2, .999].map(value => chamberIndex(() => value)), [0, 1, 5]);
+assert.deepEqual(rules.doorChoices(1, () => .99), ['ammo', 'bounty']);
+assert.deepEqual(rules.doorChoices(6, () => .99), ['bounty', 'freeze']);
+assert.equal(rules.payoutMultiplier(5, .4), 7);
+assert.equal(rules.payoutMultiplier(10, 1), 10);
 
 console.log('規則驗證通過');

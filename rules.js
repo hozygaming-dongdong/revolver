@@ -5,6 +5,9 @@ const revolverRules = (() => {
   const bossRounds = 3;
   const startAmmo = 6;
   const bossMaxAmmo = 5;
+  const maxMultiplier = 10;
+  const payoutMultiplier = (base, bonus) => Math.min(maxMultiplier, base * (1 + bonus));
+  const targetWeights = { ammo: 42, bonus: 24, crit: 13, freeze: 12, bounty: 9 };
   const ammoDraw = [
     { value: 1, weight: 50 },
     { value: 2, weight: 35 },
@@ -58,7 +61,13 @@ const revolverRules = (() => {
   const drawSpecial = (random = Math.random) => specialDraw[weightedIndex(specialDraw, random)];
   const drawFinalMultiplier = (random = Math.random) => finalDraw[weightedIndex(finalDraw, random)].multiplier;
   const chamberIndex = (random = Math.random) => Math.floor(random() * slots);
-  return { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, ammoDraw, specialDraw, specialQuantityDraw, bountyDraw, finalDraw, initialCylinder, countAmmo, loadRound, drawAmmo, drawSpecial, drawFinalMultiplier, chamberIndex };
+  const doorChoices = (ammo, random = Math.random) => {
+    const pool = Object.entries(targetWeights).map(([type, weight]) => ({ type, weight }));
+    const first = pool.splice(ammo < 2 ? 0 : weightedIndex(pool, random), 1)[0].type;
+    const second = pool[weightedIndex(pool, random)].type;
+    return [first, second];
+  };
+  return { slots, rounds, prepRounds, bossRounds, startAmmo, bossMaxAmmo, maxMultiplier, payoutMultiplier, doorChoices, weightedIndex, ammoDraw, specialDraw, specialQuantityDraw, bountyDraw, finalDraw, initialCylinder, countAmmo, loadRound, drawAmmo, drawSpecial, drawFinalMultiplier, chamberIndex };
 })();
 
 if (typeof module !== 'undefined') module.exports = revolverRules;

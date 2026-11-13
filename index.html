@@ -3,22 +3,106 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#090a0b">
-  <title>CHAMBER · UI Prototype</title>
-  <link rel="stylesheet" href="style.css?v=prototype-2">
-  <script defer src="game.js?v=prototype-2"></script>
+  <meta name="theme-color" content="#100e0e">
+  <title>REVOLVER · 封鎖區</title>
+  <link rel="preload" as="image" href="assets/demo-doors.webp">
+  <link rel="stylesheet" href="style.css?v=showdown-1">
+  <script defer src="rules.js?v=showdown-1"></script>
+  <script defer src="audio.js"></script>
+  <script defer src="game.js?v=showdown-1"></script>
 </head>
 <body>
-  <main class="prototype" id="app" data-screen="start">
-    <div class="scene" aria-hidden="true"></div>
-    <header class="topbar"><span class="mark">CHAMBER</span><span class="session">RUN 01 · 08</span></header>
-    <div class="progress" aria-label="進度"><i class="active"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <section class="screen screen-start" data-screen="start"><div class="start-copy"><span class="kicker">THE LAST SHOT</span><h1>每一格<br><em>都可能是最後一格。</em></h1><p>走進門。看見目標。決定要不要扣下扳機。</p></div><div class="start-badge"><span>6</span><small>CHAMBERS</small></div><button class="action action-primary" data-action="start"><span>ENTER THE LOCKDOWN</span><b>↗</b></button></section>
-    <section class="screen screen-doors" data-screen="doors" hidden><div class="screen-heading"><span class="kicker">NEXT DECISION</span><h2>選一扇門。</h2><p>門後才會知道，你正在追什麼。</p></div><div class="door-grid"><button class="door door-supply" data-door="supply"><span class="door-number">01</span><span class="door-icon">＋</span><strong>SUPPLY</strong><small>穩住彈藥</small></button><button class="door door-bounty" data-door="bounty"><span class="door-number">02</span><span class="door-icon">◇</span><strong>BOUNTY</strong><small>放大獎金</small></button></div><div class="micro-note"><span class="signal"></span> TWO DOORS · ONE SHOT</div></section>
-    <section class="screen screen-target" data-screen="target" hidden><div class="target-header"><span class="kicker">TARGET REVEALED</span><strong id="target-type">SUPPLY TARGET</strong></div><div class="target-window"><img src="assets/target-reset.png" alt="目標角色"><div class="target-reticle" aria-hidden="true"></div><span class="target-distance">12 STEPS</span></div><div class="target-card"><div><span class="kicker">YOU FOUND</span><h2 id="target-title">補給獵物</h2><p id="target-copy">命中後，彈巢會得到新的選擇。</p></div><span class="target-mark">01</span></div><button class="action action-primary" data-action="aim"><span>TAKE THE SHOT</span><b>→</b></button></section>
-    <section class="screen screen-shot" data-screen="shot" hidden><div class="shot-heading"><span class="kicker">THE CHAMBER DECIDES</span><h2>轉動。鎖定。開槍。</h2></div><div class="cylinder-stage"><span class="pointer" aria-hidden="true"></span><img class="cylinder-art" src="assets/cylinder-reset.png" alt="六格彈巢"><div class="slots" aria-label="六格彈巢"><i class="loaded"></i><i class="loaded"></i><i class="empty"></i><i class="loaded"></i><i class="empty"></i><i class="loaded"></i></div></div><div class="shot-result" id="shot-result"><span class="kicker">LOCKED CHAMBER</span><strong>?</strong><small>按下後才會揭曉</small></div><button class="action action-fire" data-action="fire"><span>FIRE</span><b>↗</b></button></section>
-    <section class="screen screen-reward" data-screen="reward" hidden><div class="screen-heading"><span class="kicker">REWARD DRAW</span><h2>命中後的下一個決定。</h2><p>這不是結算，是下一步的籌碼。</p></div><div class="reward-wheel"><span class="wheel-pointer"></span><div class="wheel-ring"><span>+1</span><span>×1.5</span><span>+2</span><span>×2</span><span>+3</span><span>×1.2</span></div><div class="wheel-core"><img src="assets/ammo-sheet-reset.png" alt="特殊彈"></div></div><div class="reward-readout"><span class="kicker">DRAW RESULT</span><strong>+2 NORMAL ROUNDS</strong></div><button class="action action-primary" data-action="next"><span>CHOOSE NEXT DOOR</span><b>→</b></button></section>
-    <footer class="bottomline"><span id="state-label">READY</span><span>PORTRAIT PROTOTYPE / 01</span></footer>
+  <main id="app" data-phase="ready" data-scene="doors">
+    <div class="backdrop" aria-hidden="true"></div>
+    <header class="hud">
+      <div class="masthead">
+        <div>REVOLVER <span>封鎖區</span></div>
+        <button id="sound" class="sound" type="button" aria-label="音效" aria-pressed="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3zM16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"/></svg>
+        </button>
+      </div>
+      <div class="cashline">
+        <div class="stat"><span>CREDITS · 餘額</span><strong id="credits">1,000</strong></div>
+        <div class="stat"><span>BET · 押分</span><strong id="bet">10</strong></div>
+        <div class="stat jackpot"><span>WIN UP TO</span><strong>10<span>X</span></strong></div>
+      </div>
+      <div class="runline">
+        <div><span id="round-label">備戰</span><strong id="round">—</strong></div>
+        <div><span>彈巢</span><strong id="ammo">6/6</strong></div>
+        <div><span>賞金加成</span><strong id="bonus">×1.0</strong></div>
+        <div><span>最高派彩</span><strong id="ceiling">100</strong></div>
+      </div>
+      <div class="route" id="route" aria-label="備戰進度"><i></i><i></i><i></i><i></i><i></i><i class="boss-node"></i></div>
+    </header>
+
+    <section class="stage" aria-label="遊戲場景">
+      <div id="ready" class="ready">
+        <div class="hero"><span>封鎖區</span><h1>REVOLVER</h1><p>穿越五道門，擊倒 Boss 抽最終獎金</p></div>
+      </div>
+      <div id="doors" class="doors" hidden>
+        <h2>選一扇門</h2>
+        <div class="door-options">
+          <button class="door" type="button"><img alt=""><strong></strong><small></small></button>
+          <button class="door" type="button"><img alt=""><strong></strong><small></small></button>
+        </div>
+      </div>
+      <img id="enemy" class="enemy" alt="" hidden>
+      <div id="target" class="target" hidden><img id="target-icon" alt=""><div><strong id="target-name"></strong><small id="target-reward"></small></div></div>
+      <div id="boss-status" class="boss-status" hidden>
+        <div><span>BOSS</span><strong id="boss-hp">◆ ◆ ◆</strong></div>
+        <div><span>反擊倒數</span><strong id="boss-clock">3 槍</strong></div>
+      </div>
+      <div class="reticle" aria-hidden="true"></div>
+      <img class="weapon" src="assets/demo-weapon.webp" alt="">
+      <div class="flash" aria-hidden="true"></div>
+      <div id="combat" class="combat" hidden>
+        <div id="armory" class="armory" hidden>
+          <div class="armory-head"><span id="load-guide">裝填特殊彈</span><button type="button" id="undo" data-action="undo" hidden>復原</button></div>
+          <div class="pocket">
+            <button type="button" data-load="normal" class="normal"><img src="assets/cartridge.png" alt=""><span>普通</span><b></b></button>
+            <button type="button" data-load="crit" class="crit"><img src="assets/cartridge.png" alt=""><span>爆擊</span><b></b></button>
+            <button type="button" data-load="freeze" class="freeze"><img src="assets/cartridge.png" alt=""><span>冰凍</span><b></b></button>
+            <button type="button" data-load="bounty" class="bounty"><img src="assets/cartridge.png" alt=""><span>賞金</span><b></b></button>
+          </div>
+        </div>
+        <div class="action-row">
+          <div class="cylinder-frame" aria-label="六格彈巢">
+            <i class="pointer"></i>
+            <div id="cylinder" class="cylinder"></div>
+          </div>
+          <div class="trigger">
+            <div id="shot" class="shot" role="status"></div>
+            <button id="fire" class="cta fire" type="button" data-action="fire"><span>FIRE</span><small>轉彈巢 · 開槍</small></button>
+          </div>
+        </div>
+      </div>
+      <div id="reward" class="reward" hidden>
+        <h2 id="reward-title"></h2>
+        <div class="wheel-frame">
+          <i class="pointer"></i>
+          <div id="wheel" class="wheel"></div>
+          <div class="hub"><img id="wheel-icon" alt=""></div>
+        </div>
+        <strong id="reward-result" role="status"></strong>
+        <small id="reward-detail"></small>
+      </div>
+      <div id="result" class="result" hidden>
+        <img id="result-icon" src="assets/bounty-token.webp" alt="">
+        <h2 id="result-title"></h2>
+        <strong id="payout"></strong>
+        <p id="result-detail"></p>
+      </div>
+    </section>
+
+    <footer class="dock">
+      <div id="wager" class="wager">
+        <button type="button" class="bet-step" data-action="lower" aria-label="降低押分">−</button>
+        <button type="button" class="bet-step" data-action="higher" aria-label="提高押分">+</button>
+        <button type="button" class="cta" id="start" data-action="start">押分開局</button>
+      </div>
+      <button type="button" id="advance" class="cta" data-action="advance" hidden>轉動輪盤</button>
+      <span id="footer-status" role="status">試玩點數</span>
+    </footer>
   </main>
 </body>
 </html>
