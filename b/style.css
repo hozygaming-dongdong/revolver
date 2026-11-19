@@ -104,10 +104,12 @@ button:disabled{cursor:default;opacity:.53}
 .seal-reward{animation:found .35s ease-out both}
 @keyframes found{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 .route-kit,.after,.radio-destination{display:flex;align-items:center;justify-content:center;gap:4px}
-.route-kit{font-size:10px;color:#c3e8e8;white-space:nowrap}
+.route-kit{font-size:10px;color:#c3e8e8;white-space:nowrap;gap:3px}
 .route-kit .icon,.radio-destination .icon{width:12px;height:12px}
 .after{color:#a9ceaa;gap:2px}
-.after .dial{width:29px}
+.after .dial{width:25px}
+.route-lock{display:flex;align-items:center;gap:4px;color:#ffc189;font-size:9px;font-weight:750;min-height:29px;white-space:nowrap}
+.route-lock .icon{width:13px;height:13px}
 .radio-destination{font-size:9px;line-height:1.1;color:#e5c8f4}
 .callout{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;color:#ffdba0;font-size:9px;font-weight:700}
 .callout .cue:first-child{color:#f2a68e}

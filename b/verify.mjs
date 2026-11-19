@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { START_BALANCE, CAPS, PRIZES, JACKPOT_SLOT, WEIGHT_TOTAL, loaded, prizeSlots, jackpotOdds, drawBountyIndex, randomIndex, newRun, takeRoute, beginShot, resolveShot, startDraw, settleDraw } from './engine.mjs';
+import { START_BALANCE, MAX_SEALS, PRIZES, JACKPOT_SLOT, WEIGHT_TOTAL, loaded, prizeSlots, jackpotOdds, drawBountyIndex, randomIndex, newRun, takeRoute, beginShot, resolveShot, startDraw, settleDraw } from './engine.mjs';
 
 const noEvent = n => n === 10 ? 9 : 0;
 const firstEvent = () => 0;
@@ -28,6 +28,30 @@ test('five chambers from Armory persist on conserve and are spent on charge', ()
   assert.equal(loaded(hit(armory, 'charge').chambers), 4);
 });
 
+test('charge spends exactly one round, strong conserve restores two, and the last round is protected', () => {
+  const lateSupply = n => n === 10 ? 9 : n === 2 ? 1 : 0;
+  let run = newRun(START_BALANCE, 100, lateSupply);
+  for (const expected of [3, 2, 1]) {
+    run = hit(run, 'charge');
+    assert.equal(loaded(run.chambers), expected);
+  }
+  assert.equal(run.tokens, 9);
+  assert.equal(run.offers[1].locked, true);
+  assert.throws(() => takeRoute(run, 'charge'), /Route unavailable/);
+  run = hit(run, 'conserve');
+  assert.equal(run.phase, 'boss');
+  assert.equal(loaded(beginShot(run).route.aim), 1);
+
+  const earlySupply = n => n === 10 ? 9 : n === 4 ? 1 : 0;
+  run = hit(newRun(START_BALANCE, 100, earlySupply), 'charge');
+  const supply = takeRoute(run, 'conserve').route;
+  assert.equal(loaded(supply.aim), 4);
+  assert.equal(supply.max, 0);
+  run = hit(run, 'conserve');
+  assert.equal(loaded(run.chambers), 5);
+  assert.equal(run.tokens, 3);
+});
+
 test('empty stops the run, and only the final draw pays', () => {
   const run = newRun(START_BALANCE, 200, noEvent);
   const firing = beginShot(takeRoute(run, 'charge'));
@@ -49,33 +73,42 @@ test('empty stops the run, and only the final draw pays', () => {
   assert.throws(() => settleDraw(paid, 0));
 });
 
-test('seeded journeys exercise every route and preserve all caps and rewards', () => {
+test('seeded journeys exercise every route and preserve ammo, rarity and seal limits', () => {
   const kinds = new Set(), tiers = new Set();
   for (let seed = 1; seed <= 800; seed++) {
     let value = seed;
     const pick = n => ((value = (Math.imul(1664525, value) + 1013904223) >>> 0) >>> 8) % n;
     let run = newRun(START_BALANCE, 100, pick);
-    const scarce = new Set();
+    let strongSupply = 0, strongCharge = 0;
     for (let stage = 0; stage < 4; stage++) {
       const before = run.tokens;
       assert.deepEqual(run.offers.slice(0, 2).map(r => r.kind), ['conserve', 'charge']);
-      const safe = run.offers[0];
-      if (safe.tier) { assert.ok(!scarce.has(safe.tier)); scarce.add(safe.tier); }
+      const [safe, charge] = run.offers;
+      const n = loaded(run.chambers);
+      strongSupply += Number(safe.tier > 0);
+      strongCharge += Number(charge.tier > 0);
+      assert.equal(charge.resultCount, n - 1);
+      assert.equal(charge.locked, n === 1);
+      if (charge.tier === 2) assert.ok(n === 2 || n === 3);
       for (const route of run.offers) {
         kinds.add(route.kind); tiers.add(`${route.kind}-${route.tier}`);
-        assert.ok(before + route.max <= CAPS[stage]);
+        assert.ok(before + route.max <= MAX_SEALS);
         if (route.kind === 'security') assert.equal(route.rewards.filter(v => v === 4).length, 2);
       }
-      const route = run.offers[pick(run.offers.length)];
+      const available = run.offers.filter(route => !route.locked);
+      const route = available[pick(available.length)];
       const firing = beginShot(takeRoute(run, route.kind));
       const live = firing.route.aim.flatMap((v, i) => v ? [i] : []);
       const index = live[pick(live.length)];
       run = resolveShot(firing, index, pick);
       assert.equal(run.tokens, before + route.rewards[index]);
       assert.equal(loaded(run.chambers), route.resultCount);
+      assert.ok(loaded(run.chambers) >= 1);
       if (route.reserve) assert.equal(run.offers.find(offer => offer.kind === route.reserve).tier, 2);
       assert.deepEqual(prizeSlots(run.tokens).filter(v => v !== null).sort((a,b) => a-b), [...PRIZES].sort((a,b) => a-b).slice(before + route.rewards[index]));
     }
+    assert.equal(strongSupply, 1);
+    assert.ok(strongCharge <= 1);
     assert.equal(prizeSlots(run.tokens).length, 12);
     assert.ok(prizeSlots(run.tokens).filter(v => v !== null).length >= 3);
   }

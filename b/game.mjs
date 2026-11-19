@@ -59,8 +59,8 @@ const replacementSlots = (before, after) => {
 };
 
 function note(route, before) {
-  if (route.kind === 'conserve') return before === 5 ? 'Keep five on hit' : 'Reload before shot';
-  if (route.kind === 'charge') return before === 5 ? 'Spend one on hit' : 'Reload on hit';
+  if (route.kind === 'conserve') return before === 5 ? 'Keep five on hit' : 'Load one before the shot';
+  if (route.kind === 'charge') return 'Spend one round';
   if (route.kind === 'armory') return 'Extra round on hit';
   if (route.kind === 'security') return 'Marked live slots';
   return `Next: ${pathName(run.stage + 1, route.reserve)}`;
@@ -69,12 +69,14 @@ function note(route, before) {
 function routeCard(route) {
   const n = loaded(route.aim), rarity = RARITIES[route.tier];
   const reward = route.kind === 'security' ? '1 or 4' : route.max;
+  const rewardMark = route.kind === 'security' ? '1/4' : route.max;
   const before = loaded(run.chambers), detail = note(route, before);
   const destination = pathName(run.stage, route.kind);
   const style = ['conserve', 'charge'].includes(route.kind) ? route.kind : 'event';
   const extra = route.kind === 'radio' ? `<span class="radio-destination">${icon('radio')}${pathName(run.stage + 1, route.reserve)}</span>` : '';
-  const refill = before < n ? cue(`${icon('bullet')}+1`, 'Load one round before shooting') : '';
-  return `<button class="route-card ${rarity.toLowerCase()} ${style}" data-route="${route.kind}" aria-label="${destination}, ${rarity} ${names[route.kind]}. Hit ${odds(n)}, empty ${odds(6-n)}. On hit ${reward} clearance seals and ${route.resultCount} live chambers. ${detail}."><span class="waypoint">${icon(icons[route.kind])}</span><span class="route-sign"><span class="route-rarity" aria-hidden="true">${'<i></i>'.repeat(route.tier+1)}</span><strong class="route-name">${destination}</strong><span class="odds">${icon('target')}${odds(n)}<span class="miss">${icon('empty')}${odds(6-n)}</span></span>${extra}<span class="route-kit"><span class="prize-badge${route.max ? '' : ' no-seals'}">${sealCount(reward)}</span>${refill}<span class="after" title="Cylinder after a hit">${icon('check')}${cylinder(slots(route.resultCount))}</span></span></span></button>`;
+  const label = route.locked ? `${destination}. Save the last round for the Boss.` : `${destination}, ${rarity} ${names[route.kind]}. Hit ${odds(n)}, empty ${odds(6-n)}. On hit ${reward} clearance seals and ${route.resultCount} live chambers. ${detail}.`;
+  const preview = route.locked ? `<span class="route-lock">${icon('bullet')} SAVE LAST ROUND</span>` : `<span class="odds">${icon('target')}${odds(n)}<span class="miss">${icon('empty')}${odds(6-n)}</span></span>${extra}<span class="route-kit"><span class="after" title="Cylinder for the shot and after a hit">${cylinder(slots(n))}${icon('arrow')}${cylinder(slots(route.resultCount))}</span><span class="prize-badge${route.max ? '' : ' no-seals'}">${sealCount(rewardMark)}</span></span>`;
+  return `<button class="route-card ${rarity.toLowerCase()} ${style}" data-route="${route.kind}" aria-label="${label}" ${route.locked ? 'disabled' : ''}><span class="waypoint">${icon(icons[route.kind])}</span><span class="route-sign"><span class="route-rarity" aria-hidden="true">${'<i></i>'.repeat(route.tier+1)}</span><strong class="route-name">${destination}</strong>${preview}</span></button>`;
 }
 
 function betControls(balance) {
@@ -180,7 +182,7 @@ async function approach() {
   trigger.disabled = false;
 }
 
-async function showReload(dial) {
+async function showReload(...dials) {
   app.classList.add('reloading');
   const trigger = app.querySelector('[data-act="fire"]');
   trigger.innerHTML = icon('bullet');
@@ -188,10 +190,12 @@ async function showReload(dial) {
   $('shot-status').innerHTML = cue(icon('spin'), 'Cylinder open');
   audio.open();
   await wait(295);
-  $('shot-status').innerHTML = cue(`${icon('bullet')}${icon('check')}`, 'Round seated');
-  $('shot-dial').innerHTML = dial;
-  audio.load();
-  await wait(510);
+  for (const [i, dial] of dials.entries()) {
+    $('shot-status').innerHTML = cue(`${icon('bullet')}${icon('check')}`, `Round ${i + 1} seated`);
+    $('shot-dial').innerHTML = dial;
+    audio.load();
+    await wait(i + 1 === dials.length ? 510 - 190*i : 190);
+  }
   audio.close();
   app.classList.remove('reloading');
 }
@@ -264,11 +268,16 @@ async function fire() {
   navigator.vibrate?.(hit ? 28 : 12);
   const found = hit && next.phase !== 'bounty' ? next.gain : 0;
   $('shot-status').innerHTML = !hit ? cue(`${icon('skull')} EMPTY`, 'Empty chamber. Run lost.') : next.phase === 'bounty' ? cue(`${icon('check')} GATE CLEAR`, 'Gate cleared') : found > 0 ? cue(`<span class="seal-reward">${sealCount(`+${found}`)}</span>`, `Hit. Found ${found} clearance seals.`) : cue(`${icon('check')} HIT`, 'Hit. Street cleared.');
-  const refilled = hit && next.phase !== 'bounty' ? next.chambers.findIndex((live, i) => live && (!run.route.aim[i] || i === index)) : -1;
-  if (refilled >= 0) {
+  const fired = [...run.route.aim];
+  fired[index] = false;
+  const refilled = hit && next.phase !== 'bounty' ? next.chambers.flatMap((live, i) => live && !fired[i] ? [i] : []) : [];
+  if (refilled.length) {
     await wait(410);
     app.classList.remove('firing');
-    await showReload(cylinder(next.chambers, { pointer: true, added: refilled }));
+    await showReload(...refilled.map(i => {
+      fired[i] = true;
+      return cylinder(fired, { pointer: true, added: i });
+    }));
   } else await wait(next.phase === 'bounty' ? 850 : 1050);
   if (next.phase === 'bounty') audio.win();
   const previous = run.tokens;
