@@ -44,6 +44,21 @@ button:disabled{cursor:default;opacity:.53}
 .intro .scene h1{font-size:clamp(35px,10vw,54px);text-transform:uppercase}
 .intro .scene h1 em{font-style:normal;color:var(--gold)}
 .weapon{position:absolute;right:-4%;bottom:-6%;width:min(35%,180px);max-height:94%;object-fit:contain;object-position:bottom right;z-index:-1;pointer-events:none}
+.first-alley .scene,.first-road .scene{container-type:size}
+.first-world{position:absolute;left:50%;top:50%;width:max(100%,150cqh);height:max(100%,66.6667cqw);transform:translate(-50%,-50%) scale(var(--approach));z-index:-3}
+.first-alley{--approach:1.065;--glide-x:-53%;--glide-y:-51%}
+.first-road{--approach:1.145;--glide-x:-50%;--glide-y:-49%}
+.arrival .first-world{animation:approach 1.12s cubic-bezier(.2,.59,.32,1) both}
+.alley-cover{position:absolute;inset:0;clip-path:polygon(35.4% 0,100% 0,100% 100%,36.5% 100%)}
+.alley-actor{position:absolute;left:30%;bottom:1%;width:45%;height:81%;object-fit:contain;object-position:center bottom;filter:drop-shadow(6px 3px 9px #091c1ab3)}
+.arrival .alley-actor{animation:step-out 1.12s cubic-bezier(.24,.65,.29,1) both}
+@keyframes approach{from{transform:translate(var(--glide-x),var(--glide-y)) scale(1)}to{transform:translate(-50%,-50%) scale(var(--approach))}}
+@keyframes step-out{0%,36%{transform:translate(-103%,4%) rotate(-9deg)}57%{transform:translate(-69%,1%) rotate(-5deg)}to{transform:translate(0,0) rotate(0deg)}}
+.first-alley.firing .scene-image,.first-alley.misfire .scene-image{animation:none}
+.first-alley.firing .alley-actor{animation:alley-hit .5s ease-out}
+.first-alley.misfire .alley-actor{animation:alley-lunge .45s ease-out forwards}
+@keyframes alley-hit{25%{filter:brightness(1.7)}to{filter:brightness(.8);transform:translate(5%,6%) rotate(4deg)}}
+@keyframes alley-lunge{to{transform:translate(5%,-3%) scale(1.35)}}
 .firing .weapon{animation:kick .23s ease-out}
 .firing .scene-image{animation:hit .5s ease-out}
 .misfire .scene-image{animation:lunge .45s ease-out forwards}
@@ -122,4 +137,4 @@ button:disabled{cursor:default;opacity:.53}
 .lost .overline{color:#ffac91}
 footer{display:flex;justify-content:space-between;align-items:center;padding:3px 10px max(3px,env(safe-area-inset-bottom));font-size:8px;letter-spacing:.09em;color:#a9aea8;background:#10171a;min-height:17px}
 @media(max-height:710px){.hud{padding-top:max(4px,env(safe-area-inset-top))}.top{margin-bottom:3px}.wallet{padding-block:4px}.progress{margin:4px 0}.prize-chip{height:29px}.actions{padding-top:5px}.shot-dial{width:min(62vw,32dvh,260px)}.bounty-dial{width:min(85vw,45dvh,360px)}}
-@media(prefers-reduced-motion:reduce){.prize-chip.removing,.firing .scene-image,.firing .weapon,.misfire .scene-image,.bounty .scene-image,.seal-reward{animation-duration:.18s}}
+@media(prefers-reduced-motion:reduce){.prize-chip.removing,.firing .scene-image,.firing .weapon,.misfire .scene-image,.bounty .scene-image,.seal-reward,.arrival .first-world,.arrival .alley-actor,.first-alley.firing .alley-actor,.first-alley.misfire .alley-actor{animation-duration:.18s}}
