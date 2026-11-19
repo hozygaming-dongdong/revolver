@@ -10,8 +10,8 @@ export function bountySlot(value, index, selected = false) {
   const jackpot = index === JACKPOT_SLOT;
   const respin = value === null;
   const title = respin ? 'Respin · Black Box +2×' : `${prizeName(value)} · ${multiplierLabel(value)}`;
-  const icon = respin ? sealMark(-13, -17, 1.08) : `<g transform="translate(0 -7)">${prizeMark(value)}</g>`;
-  return `<g transform="translate(${left} ${top})" data-slot="${index}" class="bounty-slot${respin ? ' respin-slot' : jackpot ? ' jackpot-slot' : ''}${selected ? ' selected' : ''}"><title>${title} · ${percent(jackpot ? jackpotOdds(0) : ordinaryOdds)} per spin</title><circle class="socket" r="25"/><circle class="seat" r="22"/>${icon}<text class="slot-value" y="13">${respin ? 'RE-SPIN' : multiplierLabel(value)}</text><circle class="slot-stop" r="25"/></g>`;
+  const icon = respin ? sealMark(-14.4, -14.4, 1.2) : `<g transform="translate(0 -7)">${prizeMark(value)}</g><text class="slot-value" y="13">${multiplierLabel(value)}</text>`;
+  return `<g transform="translate(${left} ${top})" data-slot="${index}" class="bounty-slot${respin ? ' respin-slot' : jackpot ? ' jackpot-slot' : ''}${selected ? ' selected' : ''}"><title>${title} · ${percent(jackpot ? jackpotOdds(0) : ordinaryOdds)} per spin</title><circle class="socket" r="25"/><circle class="seat" r="22"/>${icon}<circle class="slot-stop" r="25"/></g>`;
 }
 
 export function bountyWheel(tokens, jackpot, { selected, compact = false } = {}) {

@@ -129,6 +129,7 @@ export function encounter() {
   const buffers = Object.fromEntries(['ground','metal','solid','actor'].map(key => [key, gl.createBuffer()]));
   const spriteData = new Float32Array(6*8);
   let view, key, frame, last = -Infinity, start = 0, duration = 0, finish, step, beat = -1, reduced = false, reaction = '', reactedAt = 0;
+  let advanceAt = -Infinity, advanceDuration = 1, focusAt = null;
   function draw(key, amount, tex) {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers[key]);
     gl.vertexAttribPointer(attributes[0],3,gl.FLOAT,false,32,0);
@@ -188,11 +189,15 @@ export function encounter() {
     for (const material of ['ground','metal','solid']) draw(material, view.batches[material].length/8, textures.get(material));
     const tex = textures.get(view.actor);
     const stepFromCover = view.alley ? -1.48 + 1.71*ease(bounded((t-.33)/.66)) : .09;
-    const idle = reduced ? 0 : Math.sin(now/440)*.036;
-    const actorX = stepFromCover+idle+collapse*.55, actorZ = Math.max(view.distance+1.05, view.actorZ-strike*3.3);
+    const actorTime = focusAt ?? now;
+    const advance = bounded((actorTime-advanceAt)/advanceDuration);
+    const footfall = reduced ? 0 : Math.sin(Math.PI*advance);
+    const idle = reduced ? 0 : Math.sin(actorTime/440)*.036;
+    const actorX = stepFromCover + idle + footfall*.10 + collapse*.55;
+    const actorZ = Math.max(view.distance+1.05, view.actorZ-ease(advance)*.74-strike*3.3);
     contactShadow(actorX, actorZ, view.height);
     gl.uniform1f(uniforms.actor, 1);
-    sprite(tex, actorX, .025, actorZ, view.height*(1-.73*collapse+.012*Math.sin(now/340)), collapse*.72 - idle);
+    sprite(tex, actorX, .025 + footfall*.07, actorZ, view.height*(1-.73*collapse+(reduced ? 0 : .012*Math.sin(actorTime/340))), collapse*.72 - idle - footfall*.13);
     if (t > 0 && t < 1) {
       canvas.parentElement.style.setProperty('--footfall', `${(amplitude*Math.sin(stride*Math.PI)*67).toFixed(2)}px`);
       const index = Math.floor(stride);
@@ -209,7 +214,7 @@ export function encounter() {
       const next = `${stage}-${route}`;
       if (next !== key) {
         key = next; view = street(stage, route);
-        duration = 0; reaction = ''; beat = -1;
+        duration = 0; reaction = ''; beat = -1; advanceAt = -Infinity; focusAt = null;
         for (const [name, geometry] of Object.entries(view.batches)) {
           gl.bindBuffer(gl.ARRAY_BUFFER, buffers[name]);
           gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(geometry), gl.STATIC_DRAW);
@@ -223,7 +228,9 @@ export function encounter() {
       start = performance.now(); duration = reduced ? 630 : 1850;
       return new Promise(resolve => { finish = resolve; });
     },
-    react(hit) { reaction = hit ? 'hit' : 'empty'; reactedAt = performance.now(); },
+    advance(ms) { advanceAt = performance.now(); advanceDuration = ms; },
+    focus() { focusAt = performance.now(); },
+    react(hit) { focusAt = null; reaction = hit ? 'hit' : 'empty'; reactedAt = performance.now(); },
     hide() {
       cancelAnimationFrame(frame); frame = null; key = null;
       canvas.remove();
