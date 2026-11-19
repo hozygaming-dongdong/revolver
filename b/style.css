@@ -1,7 +1,8 @@
 :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#080d11;color:#f2e8d3;--gold:#f4ca7a;--muted:#adad9f;--line:#403c33}
+:root,.game{touch-action:manipulation}
 *{box-sizing:border-box}
 body{margin:0;display:grid;justify-items:center;min-height:100dvh;background:radial-gradient(ellipse at 50% 35%,#223038,#080d11 70%)}
-button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:focus-visible{outline:2px solid #d8f5ff;outline-offset:2px}
 button:disabled{cursor:default;opacity:.53}
 .game{isolation:isolate;display:flex;flex-direction:column;width:min(100vw,510px);height:100dvh;max-height:1000px;overflow:hidden;background:#0b151a;box-shadow:0 0 90px #0009;border-inline:1px solid #272e2d}
