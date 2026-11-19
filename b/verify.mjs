@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { START_BALANCE, CAPS, PRIZES, loaded, remaining, randomIndex, newRun, takeRoute, beginShot, resolveShot, startDraw, settleDraw } from './engine.mjs';
+import { START_BALANCE, CAPS, PRIZES, JACKPOT_SLOT, WEIGHT_TOTAL, loaded, prizeSlots, jackpotOdds, drawBountyIndex, randomIndex, newRun, takeRoute, beginShot, resolveShot, startDraw, settleDraw } from './engine.mjs';
 
 const noEvent = n => n === 10 ? 9 : 0;
 const firstEvent = () => 0;
@@ -43,9 +43,9 @@ test('empty stops the run, and only the final draw pays', () => {
   assert.throws(() => startDraw(journey));
   const cleared = hit(journey, 'boss');
   assert.equal(cleared.balance, 9800);
-  const paid = settleDraw(startDraw(cleared), remaining(cleared.tokens).length - 1);
-  assert.equal(paid.multiplier, 8);
-  assert.equal(paid.balance, 11400);
+  const paid = settleDraw(startDraw(cleared), JACKPOT_SLOT);
+  assert.equal(paid.multiplier, 50);
+  assert.equal(paid.balance, 19800);
   assert.throws(() => settleDraw(paid, 0));
 });
 
@@ -74,18 +74,57 @@ test('seeded journeys exercise every route and preserve all caps and rewards', (
       assert.equal(run.tokens, before + route.rewards[index]);
       assert.equal(loaded(run.chambers), route.resultCount);
       if (route.reserve) assert.equal(run.offers.find(offer => offer.kind === route.reserve).tier, 2);
-      assert.deepEqual(remaining(run.tokens), PRIZES.slice(before + route.rewards[index]));
+      assert.deepEqual(prizeSlots(run.tokens).filter(v => v !== null).sort((a,b) => a-b), [...PRIZES].sort((a,b) => a-b).slice(before + route.rewards[index]));
     }
-    assert.ok(remaining(run.tokens).length >= 3);
+    assert.equal(prizeSlots(run.tokens).length, 12);
+    assert.ok(prizeSlots(run.tokens).filter(v => v !== null).length >= 3);
   }
   assert.equal(kinds.size, 5);
   assert.equal(tiers.size, 9);
 });
 
-test('the six chambers and every remaining prize count use unbiased random indices', () => {
-  for (let n = 3; n <= 12; n++) {
-    for (let i = 0; i < n; i++) assert.equal(randomIndex(n, () => i), i);
-  }
+test('the six shooting chambers are uniform and the 12 bounty chambers use exact weights', () => {
+  for (let i = 0; i < 6; i++) assert.equal(randomIndex(6, () => i), i);
   const values = [4294967295, 8];
   assert.equal(randomIndex(6, () => values.shift()), 2);
+  const weights = Array(12).fill(0);
+  for (let i = 0; i < WEIGHT_TOTAL; i++) weights[drawBountyIndex((size) => {
+    assert.equal(size, 1102);
+    return i;
+  })]++;
+  assert.deepEqual(weights, [100, 2, ...Array(10).fill(100)]);
+});
+
+test('0, 3 and 9 seals replace the lowest prizes while the jackpot odds rise', () => {
+  const sorted = [...PRIZES].sort((a,b) => a-b);
+  for (const tokens of [0, 3, 9]) {
+    const slots = prizeSlots(tokens);
+    assert.equal(slots.length, 12);
+    assert.equal(slots.filter(v => v === null).length, tokens);
+    assert.deepEqual(slots.filter(v => v !== null).sort((a,b) => a-b), sorted.slice(tokens));
+    assert.equal(slots[JACKPOT_SLOT], 50);
+  }
+  assert.deepEqual([0,3,9].map(jackpotOdds), [2/1102, 2/802, 2/202]);
+});
+
+test('the same seal can trigger repeatedly without credit or cap, until a prize settles once', () => {
+  let state = { phase: 'drawing', tokens: 9, jackpot: 50, respins: 0, balance: 9900, bet: 100, payout: null };
+  const repeatedSlot = prizeSlots(9).indexOf(null);
+  for (let n = 1; n <= 75; n++) {
+    state = settleDraw(state, repeatedSlot);
+    assert.equal(state.phase, 'drawing');
+    assert.equal(state.index, repeatedSlot);
+    assert.equal(state.respins, n);
+    assert.equal(state.jackpot, 50 + 2*n);
+    assert.equal(state.balance, 9900);
+    assert.equal(state.payout, null);
+  }
+  const ordinaryPaid = settleDraw(state, PRIZES.indexOf(4));
+  assert.equal(ordinaryPaid.payout, 400);
+  assert.equal(ordinaryPaid.balance, 10300);
+  const won = settleDraw(state, JACKPOT_SLOT);
+  assert.equal(won.multiplier, 200);
+  assert.equal(won.payout, 20000);
+  assert.equal(won.balance, 29900);
+  assert.throws(() => settleDraw(won, repeatedSlot));
 });

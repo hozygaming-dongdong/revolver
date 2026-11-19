@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 
-const allowed = new Set(['b/index.html', 'b/style.css', 'b/engine.mjs', 'b/game.mjs', 'b/loot.mjs',
+const allowed = new Set(['b/index.html', 'b/style.css', 'b/engine.mjs', 'b/game.mjs', 'b/loot.mjs', 'b/bounty.mjs',
   'a/visuals.mjs', 'a/sound.mjs', 'a/assets/weapon.png', 'a/assets/harbor.png',
   ...['checkpoint', 'tunnel', 'freight', 'harbor', 'warden', 'checkpoint-junction', 'tunnel-junction', 'freight-junction', 'harbor-junction', 'checkpoint-alley', 'checkpoint-road', 'checkpoint-peek'].map(id => `b/assets/${id}.png`)]);
 const media = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.png': 'image/png' };

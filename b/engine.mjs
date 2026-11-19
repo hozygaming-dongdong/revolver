@@ -1,17 +1,33 @@
 export const START_BALANCE = 10000;
 export const BETS = [10, 25, 50, 100, 200, 500, 1000];
-export const PRIZES = [0.5, 0.5, 0.75, 0.75, 1, 1, 1.25, 1.5, 2, 2.5, 4, 8];
+export const PRIZES = [0.5, 50, 8, 4, 2, 1.5, 1.25, 1, 1, 0.75, 0.75, 0.5];
+export const JACKPOT = 50;
+export const JACKPOT_SLOT = PRIZES.indexOf(JACKPOT);
+const ordinaryWeight = 100, jackpotWeight = 2;
+export const WEIGHT_TOTAL = ordinaryWeight * (PRIZES.length - 1) + jackpotWeight;
+const lowSlots = PRIZES.map((_, i) => i).sort((a, b) => PRIZES[a] - PRIZES[b]);
 export const CAPS = [3, 5, 7, 9];
 export const RARITIES = ['WHITE', 'BLUE', 'ORANGE'];
 const ordinary = ['conserve', 'charge'];
 export const loaded = chambers => chambers.filter(Boolean).length;
-export const remaining = tokens => PRIZES.slice(tokens);
+export const prizeSlots = (tokens, jackpot = JACKPOT) => PRIZES.map((value, i) => lowSlots.indexOf(i) < tokens ? null : i === JACKPOT_SLOT ? jackpot : value);
+export const jackpotOdds = tokens => jackpotWeight / (WEIGHT_TOTAL - ordinaryWeight * tokens);
+export const ordinaryOdds = ordinaryWeight / WEIGHT_TOTAL;
 
 export function randomIndex(size, next = () => crypto.getRandomValues(new Uint32Array(1))[0]) {
   const limit = Math.floor(4294967296 / size) * size;
   let value;
   do { value = next(); } while (value >= limit);
   return value % size;
+}
+
+export function drawBountyIndex(pick = randomIndex) {
+  let ticket = pick(WEIGHT_TOTAL);
+  for (let i = 0; i < PRIZES.length; i++) {
+    ticket -= i === JACKPOT_SLOT ? jackpotWeight : ordinaryWeight;
+    if (ticket < 0) return i;
+  }
+  throw new Error('Invalid bounty ticket');
 }
 
 function refill(chambers, amount) {
@@ -40,7 +56,7 @@ function pairs(run, reserve) {
   const safe = [0, 1, 2].filter(tier => (tier === 0 || !run.seen.includes(tier)) && tier <= space);
   const rush = [0, 1, 2].filter(tier => tier + 2 <= space);
   const options = safe.flatMap(s => rush.map(c => [s, c])).filter(([s, c]) => c + 2 > s && (!reserve || (reserve === 'conserve' ? s === 2 : c === 2)));
-  const useful = options.filter(([s, c]) => loaded(run.chambers) === 5 || 5 * (c + 2 - s) > 12 - run.tokens - s);
+  const useful = options.filter(([s, c]) => loaded(run.chambers) === 5 || 5 * ordinaryWeight * (c + 2 - s) > WEIGHT_TOTAL - ordinaryWeight * (run.tokens + s));
   return useful.length ? useful : options;
 }
 
@@ -64,7 +80,7 @@ export function packRoutes(run, pick = randomIndex, reserve = null) {
 
 export function newRun(balance, bet, pick = randomIndex) {
   if (!BETS.includes(bet) || balance < bet) throw new Error('Invalid demo bet');
-  return packRoutes({ phase: 'route', stage: 0, tokens: 0, chambers: [true, true, true, true, false, false], balance: balance - bet, bet, seen: [], armory: false, cleared: [], payout: null }, pick);
+  return packRoutes({ phase: 'route', stage: 0, tokens: 0, jackpot: JACKPOT, respins: 0, chambers: [true, true, true, true, false, false], balance: balance - bet, bet, seen: [], armory: false, cleared: [], payout: null }, pick);
 }
 
 export function takeRoute(run, kind) {
@@ -100,8 +116,9 @@ export function startDraw(run) {
 }
 
 export function settleDraw(run, index) {
-  const multiplier = remaining(run.tokens)[index];
-  if (run.phase !== 'drawing' || multiplier === undefined) throw new Error('Invalid bounty draw');
+  if (run.phase !== 'drawing' || !Number.isInteger(index) || index < 0 || index >= PRIZES.length) throw new Error('Invalid bounty draw');
+  const multiplier = prizeSlots(run.tokens, run.jackpot)[index];
+  if (multiplier === null) return { ...run, jackpot: run.jackpot + 2, respins: run.respins + 1, index };
   const payout = run.bet * multiplier;
   return { ...run, phase: 'paid', multiplier, payout, balance: run.balance + payout, index };
 }

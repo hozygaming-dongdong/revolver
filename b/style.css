@@ -16,23 +16,14 @@ button:disabled{cursor:default;opacity:.53}
 .wallet div+div{border-left:1px solid #66563d72}
 .wallet .icon{color:var(--gold)}
 .wallet span{display:grid;gap:2px}
-.wallet small,.board-title,.caption{font-size:9px;font-weight:650;letter-spacing:.09em;color:#d0c4ac}
+.wallet small{font-size:9px;font-weight:650;letter-spacing:.09em;color:#d0c4ac}
 .wallet strong{font-size:clamp(13px,4.2vw,20px);color:#fff0c9;white-space:nowrap;font-weight:720;line-height:1.1}
 .progress{display:flex;list-style:none;margin:6px 0;padding:0;justify-content:space-between;gap:5px}
 .progress li{flex:1;display:flex;align-items:center;justify-content:center;min-height:19px;color:#acaca3;border-bottom:2px solid #364145;font-size:10px}
 .progress .cleared{color:#9fd5ad;border-color:#487a60}
 .progress .current{color:#ffe2a6;border-color:#ffbd56;background:#55391554}
 .progress .icon{width:13px;height:13px}
-.board-title{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px}
-.board-title strong{display:flex;align-items:center;gap:4px;color:var(--gold);font-weight:700}
 .seal-icon,.loot-icon{width:17px;height:17px;flex:none;vertical-align:middle}
-.board-title .seal-icon{width:15px;height:15px}
-.board{display:grid;grid-template-columns:repeat(var(--slots),minmax(0,1fr));gap:2px}
-.prize-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;height:32px;font-size:clamp(8px,2.5vw,11px);line-height:1;letter-spacing:-.025em;white-space:nowrap;border:1px solid #4b5659;border-radius:4px;background:#19272d;color:#f0e6d5;font-variant-numeric:tabular-nums}
-.prize-chip .loot-icon{width:15px;height:15px}
-.prize-chip.top-prize{border-color:#dba745;background:#643c15;color:#fff1b1;font-weight:800}
-.prize-chip.removing{animation:remove .68s ease both;background:#733931;color:#fff4d7;border-color:#e87e55}
-@keyframes remove{40%{transform:translateY(-3px);box-shadow:0 0 9px #ff884c}to{opacity:0;transform:translateY(7px) scale(.65)}}
 .scene{position:relative;isolation:isolate;flex:1;min-height:72px;overflow:hidden;background:#122831}
 .scene-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 48%;z-index:-3}
 .scene:after{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(0deg,#080e12 1%,transparent 48%,transparent 72%,#070c1360)}
@@ -100,6 +91,12 @@ button:disabled{cursor:default;opacity:.53}
 .callout span{display:flex;align-items:center;gap:3px}
 .callout .icon{width:12px;height:12px;color:#f2a68e}
 .callout .seal-icon{width:13px;height:13px}
+.junction-tools{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.junction-tools .callout{display:grid;justify-items:start;gap:5px}
+.bounty-preview{display:flex;align-items:center;gap:7px;background:linear-gradient(140deg,#30413c,#172324);border:1px solid #726044;border-radius:6px;padding:3px 7px;color:#ffe5b2;text-align:left}
+.bounty-preview>span{display:grid;gap:1px;white-space:nowrap;font-size:9px;letter-spacing:.065em}
+.bounty-preview small{color:#e4c58b;font-size:9px}
+.bounty-preview .seal-icon{width:12px;height:12px}
 .dial,.bounty-dial{position:relative;aspect-ratio:1;flex:none}
 .rotor{width:100%;height:100%;transform:rotate(0deg);transform-origin:center;will-change:transform}
 .rotor svg{display:block;width:100%;height:100%;overflow:visible}
@@ -117,18 +114,40 @@ button:disabled{cursor:default;opacity:.53}
 .trigger:active,.route-card:active{filter:brightness(1.2)}
 .bet-row{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center;margin-top:5px}
 .bet-button{min-height:44px;border-color:#68604d;background:linear-gradient(#2e3333,#182126)}
-.start-dial{width:68px;margin:0 auto 5px}
-.bounty .scene,.drawing .scene,.paid .scene{min-height:64px}
+.bounty .scene,.drawing .scene,.paid .scene,.loading .scene,.inspect .scene{min-height:64px}
 .bounty .scene-image{animation:gate .75s ease-out both}
 @keyframes gate{from{clip-path:inset(88% 0 0);filter:brightness(.6)}to{clip-path:inset(0);filter:brightness(1)}}
-.bounty-dial{width:min(88vw,48dvh,395px);margin:5px auto}
-.sector>path{stroke:#aa9871;stroke-width:1;fill:#233842}
-.sector:nth-child(even)>path{fill:#303d38}
-.sector.top-prize>path{fill:#885223;stroke:#ffdb81;stroke-width:2}
-.sector>text{fill:#fff2c4;text-anchor:middle;dominant-baseline:central;font:800 13px system-ui;paint-order:stroke;stroke:#10191e;stroke-width:2px;stroke-linejoin:round}
-.sector.selected>path{fill:#cf812b;stroke:#fff1b0;stroke-width:4;filter:drop-shadow(0 0 5px #ffb347)}
-.loot-mark{filter:drop-shadow(0 1px 2px #080c0e)}
-.bounty-message{min-height:27px;display:grid;place-items:center;color:#ffe7ac;font-weight:800;font-size:14px;text-align:center}
+.bounty-dial{width:min(87vw,43dvh,390px);margin:5px auto;isolation:isolate;filter:drop-shadow(0 5px 14px #0009)}
+.bounty-dial.compact{width:42px;margin:0;filter:none}
+.compact .pin,.compact .slot-value{display:none}
+.bounty-slot .socket{stroke:#c7aa70;stroke-width:1.65;fill:#0b1216}
+.bounty-slot .seat{fill:url(#bx-socket);stroke:#928a62;stroke-width:.75}
+.compact .seat{fill:url(#mini-socket)}
+.bounty-slot .slot-value{fill:#ffecc0;text-anchor:middle;dominant-baseline:middle;font:760 12px system-ui;letter-spacing:-.25px}
+.bounty-slot .slot-stop{fill:none;stroke:transparent;stroke-width:3}
+.jackpot-slot .seat{fill:#6d471c;stroke:#ffc758;stroke-width:1.6}
+.jackpot-slot .socket{stroke:#ffd46e;stroke-width:2.5}
+.jackpot-slot .slot-value{fill:#fff5bd;font-weight:900}
+.respin-slot .seat{fill:#63361d;stroke:#d78947;stroke-width:1.4}
+.respin-slot .slot-value{fill:#ffda86;font-size:7px;letter-spacing:.3px}
+.bounty-slot.selected .slot-stop{stroke:#fff0af;filter:drop-shadow(0 0 4px #ffb347)}
+.bounty-slot.selected .seat{stroke:#fff7c3;stroke-width:2}
+.bounty-slot.ejecting>g,.bounty-slot.ejecting .slot-value{animation:eject .21s ease-in both}
+.bounty-slot.loaded-seal .slot-stop{animation:gold-pulse .66s ease both}
+.jackpot-slot.jackpot-up .slot-stop{animation:gold-pulse .7s ease both}
+@keyframes eject{to{opacity:0;translate:0 -6px}}
+@keyframes gold-pulse{0%,50%{stroke:#ffed9b;filter:drop-shadow(0 0 5px #ffb247)}to{stroke:transparent}}
+.bounty-message{min-height:33px;display:grid;place-items:center;color:#ffe7ac;font-weight:800;font-size:14px;text-align:center}
+.bounty-facts{display:grid;gap:3px;text-align:center;color:#c8c5b7;font-size:9px;font-weight:650;letter-spacing:.025em;padding:3px 0 6px}
+.bounty-facts b{color:#ffe3a1}
+.bounty-facts .seal-icon{height:12px;width:12px}
+.swaps{display:flex;gap:4px;justify-content:center;min-height:24px;margin:1px 0 3px}
+.swap{display:flex;align-items:center;gap:3px;padding:2px 4px;border:1px solid #7d6347;border-radius:4px;background:#241b17;color:#eadcbe;font-size:10px;white-space:nowrap}
+.swap.loaded{border-color:#e8ae68;background:#442b1d}
+.swap .icon,.swap .seal-icon,.swap .loot-icon{width:13px;height:13px}
+.respin-reveal{color:#ffe3a1;font-size:12px}
+.respin-reveal strong{font-size:16px;white-space:nowrap}
+.plus-two{color:#201409;background:#ffd16d;padding:2px 6px;border-radius:4px}
 .award{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
 .award .loot-icon{width:21px;height:21px}
 .award .result-money{font-size:clamp(19px,6vw,30px)}
@@ -136,5 +155,5 @@ button:disabled{cursor:default;opacity:.53}
 .lost .scene:after{background:linear-gradient(0deg,#1e0b0b,transparent 70%)}
 .lost .overline{color:#ffac91}
 footer{display:flex;justify-content:space-between;align-items:center;padding:3px 10px max(3px,env(safe-area-inset-bottom));font-size:8px;letter-spacing:.09em;color:#a9aea8;background:#10171a;min-height:17px}
-@media(max-height:710px){.hud{padding-top:max(4px,env(safe-area-inset-top))}.top{margin-bottom:3px}.wallet{padding-block:4px}.progress{margin:4px 0}.prize-chip{height:29px}.actions{padding-top:5px}.shot-dial{width:min(62vw,32dvh,260px)}.bounty-dial{width:min(85vw,45dvh,360px)}}
-@media(prefers-reduced-motion:reduce){.prize-chip.removing,.firing .scene-image,.firing .weapon,.misfire .scene-image,.bounty .scene-image,.seal-reward,.arrival .first-world,.arrival .alley-actor,.first-alley.firing .alley-actor,.first-alley.misfire .alley-actor{animation-duration:.18s}}
+@media(max-height:710px){.hud{padding-top:max(4px,env(safe-area-inset-top))}.top{margin-bottom:3px}.wallet{padding-block:4px}.progress{margin:4px 0}.actions{padding-top:5px}.intro .scene-caption{bottom:8px}.intro .scene h1{font-size:clamp(26px,8vw,37px)}.shot-dial{width:min(62vw,32dvh,260px)}.bounty-dial:not(.compact){width:min(85vw,42dvh,350px)}}
+@media(prefers-reduced-motion:reduce){.firing .scene-image,.firing .weapon,.misfire .scene-image,.bounty .scene-image,.seal-reward,.arrival .first-world,.arrival .alley-actor,.first-alley.firing .alley-actor,.first-alley.misfire .alley-actor,.bounty-slot.ejecting>g,.bounty-slot.ejecting .slot-value,.bounty-slot.loaded-seal .slot-stop,.jackpot-slot.jackpot-up .slot-stop{animation-duration:.18s}}
