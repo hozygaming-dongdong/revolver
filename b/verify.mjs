@@ -9,52 +9,62 @@ const hit = (run, kind, pick = noEvent) => {
   return resolveShot(firing, firing.route.aim.findIndex(Boolean), pick);
 };
 
-test('the first junction has two fixed routes and exactly three of ten event rolls add a third', () => {
+test('the first junction has two fixed routes and an eligible junction rolls events at 30%', () => {
   for (let roll = 0; roll < 10; roll++) {
-    const run = newRun(START_BALANCE, 100, n => n === 10 ? roll : 0);
-    assert.deepEqual(run.offers.slice(0, 2).map(r => r.kind), ['conserve', 'charge']);
+    const start = newRun(START_BALANCE, 100, noEvent);
+    assert.deepEqual(start.offers.map(r => r.kind), ['conserve', 'charge']);
+    const run = hit(start, 'conserve', n => n === 10 ? roll : 0);
     assert.equal(run.offers.length, roll < 3 ? 3 : 2);
     assert.equal(run.balance, 9900);
   }
 });
 
 test('five chambers from Armory persist on conserve and are spent on charge', () => {
-  const armory = hit(newRun(START_BALANCE, 100, firstEvent), 'armory');
+  const start = hit(newRun(START_BALANCE, 100, noEvent), 'charge');
+  const low = hit(start, 'charge', firstEvent);
+  const armory = hit(low, 'armory');
   assert.equal(loaded(armory.chambers), 5);
-  assert.equal(armory.tokens, 0);
+  assert.equal(armory.tokens, low.tokens);
   assert.equal(loaded(takeRoute(armory, 'charge').route.aim), 5);
   assert.equal(loaded(takeRoute(armory, 'conserve').route.aim), 5);
   assert.equal(loaded(hit(armory, 'conserve').chambers), 5);
   assert.equal(loaded(hit(armory, 'charge').chambers), 4);
 });
 
-test('charge spends exactly one round, strong conserve restores two, and the last round is protected', () => {
-  const lateSupply = n => n === 10 ? 9 : n === 2 ? 1 : 0;
+test('charging all four streets spends one round per street and Boss supply tops it to four', () => {
+  const lateSupply = n => n === 10 ? 9 : n === 2 || n === 4 ? 1 : 0;
   let run = newRun(START_BALANCE, 100, lateSupply);
-  for (const expected of [3, 2, 1]) {
+  for (const expected of [5, 4, 3, 2]) {
     run = hit(run, 'charge');
     assert.equal(loaded(run.chambers), expected);
   }
   assert.equal(run.tokens, 9);
-  assert.equal(run.offers[1].locked, true);
-  assert.throws(() => takeRoute(run, 'charge'), /Route unavailable/);
-  run = hit(run, 'conserve');
   assert.equal(run.phase, 'boss');
-  assert.equal(loaded(beginShot(run).route.aim), 1);
+  assert.equal(loaded(beginShot(run).route.aim), 4);
+  assert.equal(loaded(hit(run, 'boss').chambers), 3);
 
-  const earlySupply = n => n === 10 ? 9 : n === 4 ? 1 : 0;
-  run = hit(newRun(START_BALANCE, 100, earlySupply), 'charge');
+  run = hit(hit(newRun(START_BALANCE, 100, lateSupply), 'charge'), 'charge');
   const supply = takeRoute(run, 'conserve').route;
-  assert.equal(loaded(supply.aim), 4);
+  assert.equal(loaded(supply.aim), 5);
   assert.equal(supply.max, 0);
-  run = hit(run, 'conserve');
-  assert.equal(loaded(run.chambers), 5);
-  assert.equal(run.tokens, 3);
+  assert.equal(loaded(hit(run, 'conserve').chambers), 5);
+});
+
+test('full conserve has three full cylinders followed by two five-round shots', () => {
+  for (const supplyStage of [0, 1]) {
+    let run = newRun(START_BALANCE, 100, n => n === 2 ? supplyStage : noEvent(n));
+    for (const [i, expected] of [6, 6, 6, 5].entries()) {
+      assert.equal(loaded(takeRoute(run, 'conserve').route.aim), expected);
+      run = hit(run, 'conserve');
+      assert.equal(loaded(run.chambers), i === 0 ? 6 : 5);
+    }
+    assert.equal(loaded(beginShot(run).route.aim), 5);
+  }
 });
 
 test('empty stops the run, and only the final draw pays', () => {
   const run = newRun(START_BALANCE, 200, noEvent);
-  const firing = beginShot(takeRoute(run, 'charge'));
+  const firing = beginShot(takeRoute(hit(run, 'charge'), 'charge'));
   const lost = resolveShot(firing, firing.route.aim.findIndex(v => !v));
   assert.equal(lost.payout, 0);
   assert.equal(lost.balance, 9800);
@@ -80,6 +90,7 @@ test('seeded journeys exercise every route and preserve ammo, rarity and seal li
     const pick = n => ((value = (Math.imul(1664525, value) + 1013904223) >>> 0) >>> 8) % n;
     let run = newRun(START_BALANCE, 100, pick);
     let strongSupply = 0, strongCharge = 0;
+    let reserved;
     for (let stage = 0; stage < 4; stage++) {
       const before = run.tokens;
       assert.deepEqual(run.offers.slice(0, 2).map(r => r.kind), ['conserve', 'charge']);
@@ -89,7 +100,7 @@ test('seeded journeys exercise every route and preserve ammo, rarity and seal li
       strongCharge += Number(charge.tier > 0);
       assert.equal(charge.resultCount, n - 1);
       assert.equal(charge.locked, n === 1);
-      if (charge.tier === 2) assert.ok(n === 2 || n === 3);
+      if (charge.tier === 2) assert.ok(n <= 4 || reserved === 'charge');
       for (const route of run.offers) {
         kinds.add(route.kind); tiers.add(`${route.kind}-${route.tier}`);
         assert.ok(before + route.max <= MAX_SEALS);
@@ -105,6 +116,7 @@ test('seeded journeys exercise every route and preserve ammo, rarity and seal li
       assert.equal(loaded(run.chambers), route.resultCount);
       assert.ok(loaded(run.chambers) >= 1);
       if (route.reserve) assert.equal(run.offers.find(offer => offer.kind === route.reserve).tier, 2);
+      reserved = route.reserve;
       assert.deepEqual(prizeSlots(run.tokens).filter(v => v !== null).sort((a,b) => a-b), [...PRIZES].sort((a,b) => a-b).slice(before + route.rewards[index]));
     }
     assert.equal(strongSupply, 1);
@@ -152,9 +164,9 @@ test('the same seal can trigger repeatedly without credit or cap, until a prize 
     assert.equal(state.balance, 9900);
     assert.equal(state.payout, null);
   }
-  const ordinaryPaid = settleDraw(state, PRIZES.indexOf(4));
-  assert.equal(ordinaryPaid.payout, 400);
-  assert.equal(ordinaryPaid.balance, 10300);
+  const ordinaryPaid = settleDraw(state, PRIZES.indexOf(2.25));
+  assert.equal(ordinaryPaid.payout, 225);
+  assert.equal(ordinaryPaid.balance, 10125);
   const won = settleDraw(state, JACKPOT_SLOT);
   assert.equal(won.multiplier, 200);
   assert.equal(won.payout, 20000);

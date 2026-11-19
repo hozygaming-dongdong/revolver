@@ -1,6 +1,6 @@
 export const START_BALANCE = 10000;
 export const BETS = [10, 25, 50, 100, 200, 500, 1000];
-export const PRIZES = [0.5, 50, 8, 4, 2, 1.5, 1.25, 1, 1, 0.75, 0.75, 0.5];
+export const PRIZES = [0.5, 50, 4.5, 2.25, 2, 1.5, 1.25, 1, 1, 0.75, 0.75, 0.5];
 export const JACKPOT = 50;
 export const JACKPOT_SLOT = PRIZES.indexOf(JACKPOT);
 const ordinaryWeight = 100, jackpotWeight = 2;
@@ -37,10 +37,13 @@ function refill(chambers, amount) {
   return next;
 }
 
+export const bossAim = chambers => refill(chambers, 4 - loaded(chambers));
+
 function offer(run, kind, tier, reserve) {
   const n = loaded(run.chambers);
   const space = MAX_SEALS - run.tokens;
-  const aim = kind === 'conserve' && n < 5 ? refill(run.chambers, 1) : [...run.chambers];
+  const loadLimit = run.stage < 3 ? 6 : 5;
+  const aim = kind === 'boss' ? bossAim(run.chambers) : refill(run.chambers, kind === 'conserve' && n < loadLimit ? 1 : 0);
   const locked = kind === 'charge' && n === 1;
   const seals = kind === 'conserve' ? Number(tier === 2) : kind === 'charge' && !locked ? tier + 3 : kind === 'radio' ? 2 : 0;
   let ordinal = 0;
@@ -48,22 +51,23 @@ function offer(run, kind, tier, reserve) {
     if (!live) return null;
     return Math.min(space, kind === 'security' ? (ordinal++ < 2 ? 4 : 1) : seals);
   });
-  const resultCount = kind === 'charge' || kind === 'boss' ? n - 1 : kind === 'armory' ? 5 : kind === 'conserve' && tier ? Math.min(5, n + 2) : n;
+  const carryLimit = run.stage === 0 ? 6 : 5;
+  const resultCount = kind === 'charge' || kind === 'boss' ? loaded(aim) - 1 : kind === 'armory' ? 5 : kind === 'conserve' ? Math.min(carryLimit, n + (tier ? 2 : 0)) : n;
   return { kind, tier, aim, rewards, resultCount, reserve, locked, max: Math.max(0, ...rewards) };
 }
 
-function packRoutes(run, pick) {
+function packRoutes(run, pick, reserved) {
   const n = loaded(run.chambers), space = MAX_SEALS - run.tokens;
   const safeTier = run.stage === run.supplyStage ? run.supplyTier : 0;
-  const rushTier = run.stage === run.chargeStage && n > 1 && space > 3 ? (n <= 3 ? 2 : 1) : 0;
+  const rushTier = run.stage === run.chargeStage && n > 1 && space > 3 ? (n <= 4 || reserved === 'charge' ? 2 : 1) : 0;
   const base = [offer(run, 'conserve', safeTier), offer(run, 'charge', rushTier)];
   const extras = [];
-  if (!run.armory && run.stage < 2 && n < 5) extras.push(offer(run, 'armory', 0));
+  if (!run.armory && run.stage < 3 && n < 5) extras.push(offer(run, 'armory', 0));
   if (run.stage > 0 && space >= 4 && n >= 2 && rushTier < 2) extras.push(offer(run, 'security', 1));
   if (run.stage > 0 && run.stage < 3 && space >= 2) {
     const destinations = [];
     if (run.supplyStage > run.stage) destinations.push('conserve');
-    if (run.chargeStage > run.stage && n >= 2 && n <= 3 && space >= 6) destinations.push('charge');
+    if (run.chargeStage > run.stage && n >= 2 && n <= 5 && space >= 6) destinations.push('charge');
     if (destinations.length) extras.push(offer(run, 'radio', 2, destinations[pick(destinations.length)]));
   }
   if (extras.length && pick(10) < 3) base.push(extras[pick(extras.length)]);
@@ -74,7 +78,7 @@ export function newRun(balance, bet, pick = randomIndex) {
   if (!BETS.includes(bet) || balance < bet) throw new Error('Invalid demo bet');
   const supplyStage = 1 + pick(2), supplyTier = pick(4) === 0 ? 2 : 1;
   const chargeStage = [supplyStage, supplyStage, 1, 2, 3][pick(5)];
-  return packRoutes({ phase: 'route', stage: 0, tokens: 0, jackpot: JACKPOT, respins: 0, chambers: [true, true, true, true, false, false], balance: balance - bet, bet, supplyStage, supplyTier, chargeStage, armory: false, cleared: [], payout: null }, pick);
+  return packRoutes({ phase: 'route', stage: 0, tokens: 0, jackpot: JACKPOT, respins: 0, chambers: [true, true, true, true, true, true], balance: balance - bet, bet, supplyStage, supplyTier, chargeStage, armory: false, cleared: [], payout: null }, pick);
 }
 
 export function takeRoute(run, kind) {
@@ -103,7 +107,7 @@ export function resolveShot(run, index, pick = randomIndex) {
   const next = { ...run, phase: stage === 4 ? 'boss' : 'route', stage, tokens, chambers, gain, index, armory: run.armory || route.kind === 'armory', cleared: [...run.cleared, route.kind] };
   if (route.reserve === 'conserve') { next.supplyStage = stage; next.supplyTier = 2; }
   if (route.reserve === 'charge') next.chargeStage = stage;
-  return stage === 4 ? next : packRoutes(next, pick);
+  return stage === 4 ? next : packRoutes(next, pick, route.reserve);
 }
 
 export function startDraw(run) {
