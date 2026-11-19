@@ -1,5 +1,11 @@
 # REVOLVER · 封鎖區
 
+**A 基礎版（Dead City Escape）** 已獨立放在 `a/`。[GitHub Pages 試玩](https://hozygaming-dongdong.github.io/revolver/a/)。
+
+A 的起始餘額為 NT$10,000，可在開局前調整投注。起始五顆實彈，補給先補一顆再開槍，突圍不補彈。執行 `node --test verify-a.mjs` 可驗證規則。`a-base` 標記已發布的基線，`codex/version-b` 由此起步。
+
+以下是原本的封鎖區 Demo，仍可從 GitHub Pages 首頁進入。
+
 手機直式第一人稱左輪博弈 Demo，使用瀏覽器本機的試玩點數。
 
 - 開局押分，先走五輪備戰。每輪從五種獎勵中抽出兩扇門，彈巢低於兩發時必出補給門。

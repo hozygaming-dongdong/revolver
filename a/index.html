@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1115">
+  <meta name="description" content="Five chambers loaded. Four streets. One last shot. An original revolver adventure with demo credits.">
+  <title>Dead City Escape</title>
+  <link rel="preload" as="image" href="assets/checkpoint.png">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="game.mjs"></script>
+</head>
+<body>
+  <main id="game" class="app" data-phase="intro">
+    <div class="world" aria-hidden="true"><img id="landscape" src="assets/checkpoint.png" alt=""><div class="world-shade"></div><div class="dust"></div></div>
+    <header class="header">
+      <div class="wallet"><div class="wallet-value"><span id="wallet-icon" class="wallet-icon" aria-hidden="true"></span><span><small>BALANCE</small><b id="balance">NT$10,000</b></span></div><div class="bet-value"><span id="bet-icon" aria-hidden="true"></span><span><small id="bet-label">BET</small><b id="bet" aria-live="polite">NT$100</b></span></div><button id="sound" class="sound-button" aria-label="Mute sound" aria-pressed="false"></button></div>
+      <div class="stakes"><span class="ceiling"><small>MAX WIN</small><b id="maximum"></b></span><span class="bounty"><small id="bounty-label">BOUNTY</small><b id="bounty">—</b></span></div>
+      <ol id="progress" class="progress" aria-label="Journey progress"></ol>
+      <div id="story" class="story"></div>
+    </header>
+    <section id="viewport" class="viewport">
+      <div id="enemy-art" class="enemy-art" aria-hidden="true"></div>
+      <img id="weapon" class="weapon" src="assets/weapon.png" alt="" aria-hidden="true">
+      <div id="center" class="center"></div>
+      <div class="muzzle" aria-hidden="true"></div>
+    </section>
+    <section id="controls" class="controls" aria-label="Game actions"></section>
+    <footer class="fineprint"><span>DEMO CREDITS</span><span id="location">HARBOR DISTRICT</span></footer>
+    <div class="screen-flash" aria-hidden="true"></div>
+  </main>
+</body>
+</html>
