@@ -34,7 +34,22 @@ button:disabled{cursor:default;opacity:.53}
 .intro .scene-caption{bottom:15px}
 .intro .scene h1{font-size:clamp(35px,10vw,54px);text-transform:uppercase}
 .intro .scene h1 em{font-style:normal;color:var(--gold)}
-.weapon{position:absolute;right:-4%;bottom:-6%;width:min(35%,180px);max-height:94%;object-fit:contain;object-position:bottom right;z-index:-1;pointer-events:none}
+.weapon,.reload-layer{position:absolute;right:-4%;bottom:-6%;width:min(35%,180px);max-height:94%;object-fit:contain;object-position:bottom right;z-index:-1;pointer-events:none}
+.encounter-view{position:absolute;inset:0;width:100%;height:100%;z-index:-3}
+.depth-sky{position:absolute;inset:0;overflow:hidden;z-index:-4;background:radial-gradient(ellipse at 50% 48%,#33404a,#0b121a 70%)}
+.first-road .depth-sky{background:radial-gradient(ellipse at 50% 48%,#674234,#151723 70%)}
+.depth-sky img{position:absolute;left:50%;top:0;transform:translateX(-50%);width:120%;height:145%;object-fit:cover;object-position:center top;mask-image:linear-gradient(#000 0 24%,transparent 37%);opacity:.75}
+.depth-live .first-world,.depth-live .scene-image{display:none}
+.depth-live.arrival .weapon{transform:translateY(var(--footfall,0px)) rotate(-2deg)}
+.reload-layer{right:-3%;bottom:-5%;width:min(62%,250px);max-height:85%;opacity:0;transform:translate(9%,17%) rotate(11deg)}
+.reloading .weapon{opacity:0}
+.reloading .reload-layer{animation:raise-for-load .8s ease both}
+@keyframes raise-for-load{0%{opacity:0;transform:translate(15%,46%) rotate(19deg)}24%,78%{opacity:1;transform:translate(0,-2%) rotate(-6deg)}95%{opacity:.9;transform:translate(3%,19%) rotate(5deg)}to{opacity:0;transform:translate(12%,35%) rotate(12deg)}}
+.muzzle{position:absolute;pointer-events:none;right:12.7%;bottom:12%;width:min(19%,85px);aspect-ratio:1;z-index:-1;opacity:0;mix-blend-mode:screen;background:radial-gradient(ellipse,#fff8cdbf 0%,#ffbd56dc 12%,#ff8b244d 43%,transparent 66%);}
+.firing .muzzle{animation:flash-off .22s ease-out both}
+.depth-live.misfire .scene:before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;box-shadow:inset 0 0 72px 12px #ad2c20a8;animation:dry-shock .45s ease both}
+@keyframes flash-off{0%,12%{opacity:1;transform:scale(1.22)}to{opacity:0;transform:scale(.62)}}
+@keyframes dry-shock{from{opacity:0}to{opacity:.85}}
 .first-alley .scene,.first-road .scene{container-type:size}
 .first-world{position:absolute;left:50%;top:50%;width:max(100%,150cqh);height:max(100%,66.6667cqw);transform:translate(-50%,-50%) scale(var(--approach));z-index:-3}
 .first-alley{--approach:1.065;--glide-x:-53%;--glide-y:-51%}
@@ -53,7 +68,7 @@ button:disabled{cursor:default;opacity:.53}
 .firing .weapon{animation:kick .23s ease-out}
 .firing .scene-image{animation:hit .5s ease-out}
 .misfire .scene-image{animation:lunge .45s ease-out forwards}
-@keyframes kick{40%{transform:translate(13px,12px) rotate(-9deg)}}
+@keyframes kick{25%{transform:translate(17px,13px) rotate(-14deg)}62%{transform:translate(-4px,-2px) rotate(3deg)}}
 @keyframes hit{25%{filter:brightness(1.5)}to{filter:brightness(.78);transform:translateY(5px)}}
 @keyframes lunge{to{transform:scale(1.2);filter:brightness(.72) sepia(.35)}}
 .actions{padding:7px 9px 5px;background:linear-gradient(#162127,#0c151a 90%);border-top:1px solid #61513b}
@@ -157,3 +172,4 @@ button:disabled{cursor:default;opacity:.53}
 footer{display:flex;justify-content:space-between;align-items:center;padding:3px 10px max(3px,env(safe-area-inset-bottom));font-size:8px;letter-spacing:.09em;color:#a9aea8;background:#10171a;min-height:17px}
 @media(max-height:710px){.hud{padding-top:max(4px,env(safe-area-inset-top))}.top{margin-bottom:3px}.wallet{padding-block:4px}.progress{margin:4px 0}.actions{padding-top:5px}.intro .scene-caption{bottom:8px}.intro .scene h1{font-size:clamp(26px,8vw,37px)}.shot-dial{width:min(62vw,32dvh,260px)}.bounty-dial:not(.compact){width:min(85vw,42dvh,350px)}}
 @media(prefers-reduced-motion:reduce){.firing .scene-image,.firing .weapon,.misfire .scene-image,.bounty .scene-image,.seal-reward,.arrival .first-world,.arrival .alley-actor,.first-alley.firing .alley-actor,.first-alley.misfire .alley-actor,.bounty-slot.ejecting>g,.bounty-slot.ejecting .slot-value,.bounty-slot.loaded-seal .slot-stop,.jackpot-slot.jackpot-up .slot-stop{animation-duration:.18s}}
+@media(prefers-reduced-motion:reduce){.reloading .reload-layer,.firing .muzzle{animation-duration:.18s}}

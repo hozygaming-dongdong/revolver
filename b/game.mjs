@@ -1,11 +1,12 @@
 import { icon, cylinder } from '../a/visuals.mjs';
-import { soundscape } from '../a/sound.mjs';
+import { soundscape } from './feedback.mjs';
+import { encounter } from './encounter.mjs';
 import { START_BALANCE, BETS, RARITIES, PRIZES, JACKPOT, JACKPOT_SLOT, loaded, prizeSlots, jackpotOdds, ordinaryOdds, drawBountyIndex, randomIndex, newRun, takeRoute, beginShot, resolveShot, startDraw, settleDraw } from './engine.mjs';
 import { seal, sealMark, prizeName, prizeIcon } from './loot.mjs';
 import { bountySlot, bountyWheel, multiplierLabel as x, percent } from './bounty.mjs';
 
 const $ = id => document.getElementById(id);
-const app = $('game'), audio = soundscape();
+const app = $('game'), audio = soundscape(), world = encounter();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const hold = ms => new Promise(resolve => setTimeout(resolve, ms));
 const wait = ms => hold(reduced ? ms * .35 : ms);
@@ -33,7 +34,7 @@ const checkpointRoutes = {
   charge: { scene: 'road', art: './assets/checkpoint-road.png', line: 'One figure blocks the road under the red lights.' },
 };
 const preloaded = new Map();
-let run = null, bet = 100, muted = false, sealFrom = null, previewing = false;
+let run = null, bet = 100, muted = false, sealFrom = null, previewing = false, depth = false;
 const pathName = (stage, kind) => kind === 'conserve' ? junctions[stage][0] : kind === 'charge' ? junctions[stage][1] : eventPaths[kind] ?? names[kind];
 
 function preload(path) {
@@ -85,6 +86,11 @@ function markedCylinder(route, chambers) {
       `${lead}${interior}<circle class="chip-mark" r="18"/><text class="chip-label" x="-7">${route.rewards[index]}</text>${sealMark(0, -8)}${end}`);
 }
 
+function shotStatus(stage, route, aim) {
+  const label = route ? pathName(stage, route.kind) : 'BOSS';
+  return `<span>${label}</span><span>${icon('target')} ${odds(loaded(aim))}</span><span class="miss">${icon('empty')} ${odds(6-loaded(aim))}</span>`;
+}
+
 function render(entering = false) {
   const loading = sealFrom !== null;
   const phase = loading ? 'loading' : previewing ? 'inspect' : run?.phase ?? 'intro';
@@ -95,7 +101,8 @@ function render(entering = false) {
   const isBounty = ['bounty', 'drawing', 'paid'].includes(phase);
   const [district, enemy, art, line] = scenes[loading ? stage - 1 : stage];
   const checkpoint = stage === 0 && !['intro', 'route'].includes(phase) ? checkpointRoutes[run.route?.kind] : null;
-  app.className = `game ${phase}${checkpoint ? ` first-${checkpoint.scene}` : ''}${entering ? ' arrival' : ''}`;
+  const showWeapon = ['ready', 'boss', 'spinning'].includes(phase);
+  app.className = `game ${phase}${checkpoint ? ` first-${checkpoint.scene}` : ''}${entering ? ' arrival' : ''}${showWeapon && depth ? ' depth-live' : ''}`;
   $('hud').innerHTML = `<div class="top"><span class="brand">DEAD CITY / BOUNTY RUN</span><button class="sound" data-act="sound" aria-label="${muted ? 'Enable' : 'Mute'} sound" aria-pressed="${muted}">${icon(muted ? 'muted' : 'sound')}</button></div><div class="wallet"><div>${icon('coin')}<span><small>BALANCE</small><strong id="balance">${money(balance)}</strong></span></div><div>${icon('chips')}<span><small>${result ? 'NEXT BET' : 'BET'}</small><strong>${money(stake)}</strong></span></div><div><span><small id="jackpot-label">BLACK BOX · ${x(jackpot)}</small><strong id="jackpot-value">${money((run?.bet ?? stake) * jackpot)}</strong></span></div></div><ol class="progress" aria-label="Journey progress">${scenes.map((_, i) => {
     const cleared = !!run && (stage > i || (i === 4 && isBounty));
     return `<li class="${cleared ? 'cleared' : run && stage === i ? 'current' : ''}" aria-label="${i === 4 ? 'Boss' : `Street ${i+1}`}${cleared ? ', cleared' : ''}">${cleared ? icon('check') : i === 4 ? icon('skull') : i+1}</li>`;
@@ -103,11 +110,11 @@ function render(entering = false) {
 
   const isJunction = phase === 'route';
   const sceneName = loading ? 'Load the seals' : isBounty || previewing ? 'Bounty Cylinder' : phase === 'lost' ? 'The city took you.' : isJunction ? 'Choose your way' : enemy;
-  const showWeapon = ['ready', 'boss', 'spinning'].includes(phase);
   const sceneArt = isBounty ? '../a/assets/harbor.png' : `./assets/${art}${isJunction || loading || previewing ? '-junction' : ''}.png`;
   const nextArt = scenes[stage + 1]?.[2];
   if (!run) preload('./assets/checkpoint-junction.png');
   if (isJunction) preload(`./assets/${art}.png`);
+  if (isJunction) world?.preload(stage);
   if (isJunction && stage === 0) {
     for (const entry of Object.values(checkpointRoutes)) {
       preload(entry.art);
@@ -115,13 +122,20 @@ function render(entering = false) {
     }
   }
   if (showWeapon) preload(nextArt ? `./assets/${nextArt}${stage < 3 ? '-junction' : ''}.png` : '../a/assets/harbor.png');
+  if (showWeapon && nextArt) world?.preload(stage + 1);
   const chosenPath = showWeapon && run.route && run.route.kind !== 'boss' && phase !== 'boss' ? pathName(stage, run.route.kind) : '';
   const place = isBounty ? 'EXTRACTION BAY' : chosenPath ? `${district} / ${chosenPath}` : district;
   const ordered = isJunction && run.offers.length === 3 ? [run.offers[0], run.offers[2], run.offers[1]] : run?.offers;
   const doors = isJunction ? `<div class="choices" style="--choices:${ordered.length}">${ordered.map(routeCard).join('')}</div>` : '';
   const backdrop = checkpoint ? `<div class="first-world"><img class="scene-image" src="${checkpoint.art}" alt="">${checkpoint.actor ? `<div class="alley-cover"><img class="alley-actor" src="${checkpoint.actor}" alt=""></div>` : ''}</div>` : `<img class="scene-image" src="${sceneArt}" alt="">`;
   const subtitle = !run ? 'Clear the streets and reach the last boat.' : isJunction ? junctions[stage][2] : loading ? 'Seals replace the lowest prizes with re-spins.' : previewing ? 'Every re-spin adds 2× to the Black Box.' : isBounty ? 'The gate is open. Spin for your bounty.' : phase === 'lost' ? 'Empty chamber. Bounty forfeited.' : checkpoint?.line ?? line;
-  $('scene').innerHTML = `${backdrop}${showWeapon ? '<img class="weapon" src="../a/assets/weapon.png" alt="">' : ''}<div class="scene-caption">${!run ? '<span class="overline">LAST BOAT TO SAFETY</span><h1>Dead City<br><em>Bounty Run</em></h1>' : `<span class="overline">${place}</span><h2>${sceneName}</h2>`}<p>${subtitle}</p></div>${doors}`;
+  const route = phase === 'boss' ? null : run?.route;
+  const reload = showWeapon && route?.kind === 'conserve' && loaded(run.chambers) < 5;
+  const weapon = showWeapon ? `<img class="weapon" src="../a/assets/weapon.png" alt="">${route && route.kind !== 'boss' ? '<img class="reload-layer" src="./assets/reload-fps.png" alt="">' : ''}<span class="muzzle" aria-hidden="true"></span>` : '';
+  const sky = showWeapon && depth ? `<div class="depth-sky" aria-hidden="true">${checkpoint?.scene === 'road' ? '<img src="./assets/checkpoint-road.png" alt="">' : stage >= 2 ? '<img src="../a/assets/harbor.png" alt="">' : ''}</div>` : '';
+  $('scene').innerHTML = `${backdrop}${sky}${weapon}<div class="scene-caption">${!run ? '<span class="overline">LAST BOAT TO SAFETY</span><h1>Dead City<br><em>Bounty Run</em></h1>' : `<span class="overline">${place}</span><h2>${sceneName}</h2>`}<p>${subtitle}</p></div>${doors}`;
+  if (showWeapon && depth) world.mount($('scene'), stage, route?.kind ?? 'boss');
+  else world?.hide();
 
   if (!run) {
     $('actions').innerHTML = `<div class="bounty-message">12-CHAMBER BOUNTY CYLINDER</div>${bountyWheel(0, JACKPOT)}${bountyFacts(0)}${betControls(balance)}`;
@@ -138,29 +152,49 @@ function render(entering = false) {
   } else if (phase === 'lost') {
     $('actions').innerHTML = `<div class="bounty-message"><strong class="result-money">PAID ${money(0)}</strong></div>${betControls(balance)}`;
   } else {
-    const route = phase === 'boss' ? null : run.route, aim = route?.aim ?? run.chambers;
-    const status = route ? pathName(stage, route.kind) : 'BOSS';
-    $('actions').innerHTML = `<div class="shot-status" id="shot-status" role="status"><span>${status}</span><span>${icon('target')} ${odds(loaded(aim))}</span><span class="miss">${icon('empty')} ${odds(6-loaded(aim))}</span></div><div class="shot-dial" id="shot-dial">${markedCylinder(route, aim)}</div><button class="trigger" data-act="fire" ${entering || phase === 'spinning' ? 'disabled' : ''}>${icon('fire')} ${phase === 'spinning' ? 'SPINNING' : 'FIRE'}</button>`;
+    const aim = entering && reload ? run.chambers : route?.aim ?? run.chambers;
+    $('actions').innerHTML = `<div class="shot-status" id="shot-status" role="status">${entering ? 'ADVANCING' : shotStatus(stage, route, aim)}</div><div class="shot-dial" id="shot-dial">${markedCylinder(route, aim)}</div><button class="trigger" data-act="fire" ${entering || phase === 'spinning' ? 'disabled' : ''}>${icon('fire')} ${entering ? 'ADVANCING' : phase === 'spinning' ? 'SPINNING' : 'FIRE'}</button>`;
   }
+}
+
+async function approach() {
+  const route = run.phase === 'boss' ? null : run.route;
+  const reload = route?.kind === 'conserve' && loaded(run.chambers) < 5;
+  depth = !!await world?.preload(run.stage);
+  render(true);
+  if (depth) await world.walk(reduced, audio.step);
+  else { audio.travel(); await wait(1160); }
+  app.classList.remove('arrival');
+  if (reload) await showReload(markedCylinder(route, route.aim));
+  $('shot-status').innerHTML = shotStatus(run.stage, route, route?.aim ?? run.chambers);
+  const trigger = app.querySelector('[data-act="fire"]');
+  trigger.innerHTML = `${icon('fire')} FIRE`;
+  trigger.disabled = false;
+}
+
+async function showReload(dial) {
+  app.classList.add('reloading');
+  app.querySelector('[data-act="fire"]').textContent = 'RELOADING';
+  $('shot-status').textContent = 'OPEN CYLINDER';
+  audio.open();
+  await wait(295);
+  $('shot-status').textContent = 'ROUND SEATED';
+  $('shot-dial').innerHTML = dial;
+  audio.load();
+  await wait(510);
+  audio.close();
+  app.classList.remove('reloading');
 }
 
 async function enterRoute(kind) {
   run = takeRoute(run, kind);
-  const entry = run.stage === 0 && checkpointRoutes[kind];
-  const reloaded = kind === 'conserve' && loaded(run.chambers) < 5;
-  if (!entry) {
-    if (reloaded) audio.load(); else audio.travel();
-    render();
-    return;
-  }
   document.querySelectorAll('[data-route], [data-act="inspect"]').forEach(button => { button.disabled = true; });
-  await Promise.allSettled([entry.art, entry.actor].filter(Boolean).map(path => preload(path).decode()));
-  audio.travel();
-  render(true);
-  await wait(1160);
-  app.classList.remove('arrival');
-  app.querySelector('[data-act="fire"]').disabled = false;
-  if (reloaded) audio.load();
+  await approach();
+}
+
+function nextScene() {
+  if (run.phase === 'boss') approach();
+  else render();
 }
 
 async function turn(root, count, index, turns, duration, from = 0) {
@@ -194,7 +228,7 @@ async function loadSeals(previous) {
     socket.outerHTML = bountySlot(null, index);
     $('wheel').querySelector(`[data-slot="${index}"]`).classList.add('loaded-seal');
     swaps[i].classList.add('loaded');
-    audio.load();
+    audio.seal();
   }
   $('wheel').setAttribute('aria-label', `Twelve chamber bounty cylinder. ${run.tokens} respin chambers. Black Box ${x(run.jackpot)}.`);
   app.querySelector('[data-act="continue"]').disabled = false;
@@ -211,14 +245,24 @@ async function fire() {
   await wait(450);
   const next = resolveShot(run, index);
   app.classList.add(hit ? 'firing' : 'misfire');
-  if (hit) audio.fire(); else audio.empty();
+  if (depth) world.react(hit);
+  if (hit) {
+    stopped.querySelector('.cartridge').style.opacity = '0';
+    audio.fire();
+  } else audio.empty();
+  navigator.vibrate?.(hit ? 28 : 12);
   const found = hit && next.phase !== 'bounty' ? next.gain : 0;
   $('shot-status').innerHTML = !hit ? 'EMPTY · RUN LOST' : next.phase === 'bounty' ? 'GATE CLEARED' : found > 0 ? `<span>FOUND ${found} ${found === 1 ? 'SEAL' : 'SEALS'}</span><span class="seal-reward" aria-hidden="true">${seal().repeat(found)}</span>` : 'HIT · STREET CLEARED';
-  await wait(next.phase === 'bounty' ? 850 : 1050);
+  const refilled = hit && next.phase !== 'bounty' ? next.chambers.findIndex((live, i) => live && (!run.route.aim[i] || i === index)) : -1;
+  if (refilled >= 0) {
+    await wait(410);
+    app.classList.remove('firing');
+    await showReload(cylinder(next.chambers, { pointer: true, added: refilled }));
+  } else await wait(next.phase === 'bounty' ? 850 : 1050);
   if (next.phase === 'bounty') audio.win();
   const previous = run.tokens;
   run = next;
-  if (found) await loadSeals(previous); else render();
+  if (found) await loadSeals(previous); else nextScene();
 }
 
 async function spin() {
@@ -237,7 +281,7 @@ async function spin() {
     stopped.classList.add('selected');
     const next = settleDraw(run, index);
     if (next.phase === 'drawing') {
-      audio.load();
+      audio.seal();
       message.innerHTML = `<span class="award respin-reveal">${seal()} RE-SPIN · BLACK BOX <strong>${x(run.jackpot)} → ${x(next.jackpot)}</strong><span class="plus-two">+2×</span></span>`;
       wheel.querySelector(`[data-slot="${JACKPOT_SLOT}"]`).outerHTML = bountySlot(next.jackpot, JACKPOT_SLOT);
       wheel.querySelector('.jackpot-slot').classList.add('jackpot-up');
@@ -270,8 +314,9 @@ app.addEventListener('click', event => {
     run = newRun(run?.balance ?? START_BALANCE, bet);
     audio.travel(); render();
   } else if (button.dataset.act === 'continue') {
+    button.disabled = true;
     sealFrom = null;
-    render();
+    nextScene();
   } else if (run?.phase === 'route' && (button.dataset.act === 'inspect' || button.dataset.act === 'back')) {
     previewing = button.dataset.act === 'inspect';
     render();
@@ -283,3 +328,4 @@ app.addEventListener('click', event => {
 
 render();
 preload('../a/assets/weapon.png');
+preload('./assets/reload-fps.png');
